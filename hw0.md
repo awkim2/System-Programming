@@ -23,11 +23,12 @@ In which our intrepid hero battles standard out, standard error, file descriptor
 
 ```c
 // Your code here
-```
 int main() {  
     write(1,"Hi! My name is <Your Name>", 26);  
 	return 0;  
 }  
+```
+
 
 
 
