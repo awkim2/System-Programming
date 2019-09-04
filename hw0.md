@@ -62,6 +62,13 @@ void write_triangle(int n){
 ```c
 // Your code here
 ```
+6.	int main() {  
+7.	    mode_t mode = S_IRUSR |S_IWUSR;  
+8.	    int file_ = open("hello_world.txt",O_CREAT|O_TRUNC| O_RDWR, mode);  
+9.	    write(file_, "Hi! My name is <Your Name>", 26);  
+10.	    return 0;     
+11.	}  
+
 
 5. **Not everything is a system call** Take your program from “Writing to files” and replace `write()` with `printf()`. *Make sure to print to the file instead of standard out!*
 
