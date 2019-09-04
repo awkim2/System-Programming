@@ -24,6 +24,12 @@ In which our intrepid hero battles standard out, standard error, file descriptor
 ```c
 // Your code here
 ```
+int main() {  
+    write(1,"Hi! My name is <Your Name>", 26);  
+	return 0;  
+}  
+
+
 
 2.  **Hello, Standard Error Stream!** Write a function to print out a triangle of height `n` to standard error. Your function should have the signature `void write_triangle(int n)` and should use `write()`. The triangle should look like this, for n = 3:
 
@@ -36,6 +42,20 @@ In which our intrepid hero battles standard out, standard error, file descriptor
 ```c
 // Your code here
 ```
+void write_triangle(int n){  
+	    int i,j;  
+	    for(i = 0; i < n; i++){  
+	        for(j = 0; j <= i; j++){  
+	            write(2, "*",1);  
+	        }  
+	        write(2,"\n",1);  
+	    }  
+    }  
+	int main() {  
+	    write_triangle(3);  
+	    return 0;  
+	}  
+
 
 3.  **Writing to files** Take your program from “Hello, World!” modify it write to a file called `hello_world.txt`. Make sure to to use correct flags and a correct mode for `open()` (`man 2 open` is your friend).
 
