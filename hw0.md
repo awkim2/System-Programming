@@ -42,40 +42,41 @@ int main() {
 
 ```c
 // Your code here
-```
 void write_triangle(int n){  
 	int i,j;  
 	for(i = 0; i < n; i++){  
 		for(j = 0; j <= i; j++){  
-	        	write(2, "*",1);  
+	        write(2, "*",1);  
 	        }  
 	write(2,"\n",1);  
-	 }  
+	}  
 }  
 int main() {  
 	write_triangle(3);  
 	return 0;  
 }  
+```
+
 
 
 3.  **Writing to files** Take your program from “Hello, World!” modify it write to a file called `hello_world.txt`. Make sure to to use correct flags and a correct mode for `open()` (`man 2 open` is your friend).
 
 ```c
 // Your code here
-```
 int main() {  
 	mode_t mode = S_IRUSR |S_IWUSR;  
 	int file_ = open("hello_world.txt",O_CREAT|O_TRUNC| O_RDWR, mode);  
 	write(file_, "Hi! My name is <Your Name>", 26);  
 	return 0;     
 }  
+```
+
 
 
 5. **Not everything is a system call** Take your program from “Writing to files” and replace `write()` with `printf()`. *Make sure to print to the file instead of standard out!*
 
 ```c
 // Your code here
-```
 int main() {  
 	close(1);  
 	mode_t mode = S_IRUSR |S_IWUSR;  
@@ -84,14 +85,17 @@ int main() {
 	close(file_);  
 	return 0;     
 }
+```
+
 
 
 6.  What are some differences between `write()` and `printf()`?
 
 ```c
 // Your code here
-```
 The write() is a system called implemented by the operating system, and run in kernel mode. However, printf() is a function call in library which are implemented in user mode and printf() will eventually invoke write().
+```
+
 
 ### Chapter 2
 
@@ -101,15 +105,17 @@ Sizing up C types and their limits, `int` and `char` arrays, and incrementing po
 
 ```c
 // Your answer here
-```
 At least 8 bits
+```
+
 
 2.  How many bytes are there in a `char`?
 
 ```c
 // Your answer here
-```
 1 byte.
+```
+
 
 3.  How many bytes the following are on your machine? 
 
@@ -123,48 +129,55 @@ At least 8 bits
 
 ```c
 // Your answer here
-```
 0x7fbd9d50
+```
+
 
 5.  What is `data[3]` equivalent to in C? Hint: what does C convert `data[3]` to before dereferencing the address? Remember, the type of a string constant `abc` is an array.
 
 ```c
 // Your answer here
-```
  data+3 or 3[data]
+```
+
 
 6.  Why does this segfault?
 
 ```c
 char *ptr = "hello";
 *ptr = 'J';
+Hello”is a read only constant literal string which cannot be changed
 ```
-Hello”is a read only constant string which cannot be changed
 
 7.  What does `sizeof("Hello\0World")` return?
 
 ```c
 // Your answer here
-```
 12
+```
+
 
 8.  What does `strlen("Hello\0World")` return?
 
 ```c
 // Your answer here
-```
 5
+```
+
 
 9.  Give an example of X such that `sizeof(X)` is 3.
 
 ```c
 // Your code here
+sizeof("aa")
 ```
 
 10. Give an example of Y such that `sizeof(Y)` might be 4 or 8 depending on the machine.
 
 ```c
 // Your code here
+int Y
+sizeof(Y)
 ```
 
 ### Chapter 3
