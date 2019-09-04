@@ -43,18 +43,18 @@ int main() {
 // Your code here
 ```
 void write_triangle(int n){  
-	    int i,j;  
-	    for(i = 0; i < n; i++){  
-	        for(j = 0; j <= i; j++){  
-	            write(2, "*",1);  
+	int i,j;  
+	for(i = 0; i < n; i++){  
+		for(j = 0; j <= i; j++){  
+	        	write(2, "*",1);  
 	        }  
-	        write(2,"\n",1);  
-	    }  
-    }  
-	int main() {  
-	    write_triangle(3);  
-	    return 0;  
-	}  
+	write(2,"\n",1);  
+	 }  
+}  
+int main() {  
+	write_triangle(3);  
+	return 0;  
+}  
 
 
 3.  **Writing to files** Take your program from “Hello, World!” modify it write to a file called `hello_world.txt`. Make sure to to use correct flags and a correct mode for `open()` (`man 2 open` is your friend).
@@ -62,12 +62,12 @@ void write_triangle(int n){
 ```c
 // Your code here
 ```
-6.	int main() {  
-7.	    mode_t mode = S_IRUSR |S_IWUSR;  
-8.	    int file_ = open("hello_world.txt",O_CREAT|O_TRUNC| O_RDWR, mode);  
-9.	    write(file_, "Hi! My name is <Your Name>", 26);  
-10.	    return 0;     
-11.	}  
+int main() {  
+	mode_t mode = S_IRUSR |S_IWUSR;  
+	int file_ = open("hello_world.txt",O_CREAT|O_TRUNC| O_RDWR, mode);  
+	write(file_, "Hi! My name is <Your Name>", 26);  
+	return 0;     
+}  
 
 
 5. **Not everything is a system call** Take your program from “Writing to files” and replace `write()` with `printf()`. *Make sure to print to the file instead of standard out!*
