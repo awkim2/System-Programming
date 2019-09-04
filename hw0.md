@@ -75,12 +75,22 @@ int main() {
 ```c
 // Your code here
 ```
+int main() {  
+	close(1);  
+	mode_t mode = S_IRUSR |S_IWUSR;  
+	int file_ = open("hello_world.txt",O_CREAT|O_TRUNC| O_RDWR, mode);  
+	printf("Hi! My name is <Your Name>\n");  
+	close(file_);  
+	return 0;     
+}
+
 
 6.  What are some differences between `write()` and `printf()`?
 
 ```c
 // Your code here
 ```
+The write() is a system called implemented by the operating system, and run in kernel mode. However, printf() is a function call in library which are implemented in user mode and printf() will eventually invoke write().
 
 ### Chapter 2
 
@@ -91,32 +101,36 @@ Sizing up C types and their limits, `int` and `char` arrays, and incrementing po
 ```c
 // Your answer here
 ```
+At least 8 bits
 
 2.  How many bytes are there in a `char`?
 
 ```c
 // Your answer here
 ```
+1 byte.
 
 3.  How many bytes the following are on your machine? 
 
-* `int`: 
-* `double`: 
-* `float`:
-* `long`:
-* `long long`: 
+* `int`: 4
+* `double`: 8
+* `float`: 4
+* `long`: 4
+* `long long`: 8
 
 4.  On a machine with 8 byte integers, the declaration for the variable `data` is `int data[8]`. If the address of data is `0x7fbd9d40`, then what is the address of `data+2`?
 
 ```c
 // Your answer here
 ```
+0x7fbd9d50
 
 5.  What is `data[3]` equivalent to in C? Hint: what does C convert `data[3]` to before dereferencing the address? Remember, the type of a string constant `abc` is an array.
 
 ```c
 // Your answer here
 ```
+ data+3 or 3[data]
 
 6.  Why does this segfault?
 
@@ -124,18 +138,21 @@ Sizing up C types and their limits, `int` and `char` arrays, and incrementing po
 char *ptr = "hello";
 *ptr = 'J';
 ```
+Hello”is a read only constant string which cannot be changed
 
 7.  What does `sizeof("Hello\0World")` return?
 
 ```c
 // Your answer here
 ```
+12
 
 8.  What does `strlen("Hello\0World")` return?
 
 ```c
 // Your answer here
 ```
+5
 
 9.  Give an example of X such that `sizeof(X)` is 3.
 
