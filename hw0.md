@@ -302,21 +302,45 @@ printf("%s\n", ptr);
 Text input and output and parsing using `getchar`, `gets`, and `getline`.
 
 1.  What functions can be used for getting characters from `stdin` and writing them to `stdout`?
+	getchar() putchar()
 
 2.  Name one issue with `gets()`.
+	might cause buffer overflow
 
 3.  Write code that parses the string “Hello 5 World” and initializes 3 variables to “Hello”, 5, and “World”.
 
 ```c
 // Your code here
+	int main() {  
+	    char* str = "Hello 5 World";  
+	    char one[20];  
+	    int two;  
+	    char three[20];  
+	    int result = sscanf(str, "%s %d %s", one, &two, three);  
+	    printf("Result: %d, first: %s, second: %d, third: %s\n", result, one, two, three);  
+	    return 0;  
+	} 
+
 ```
 
 4.  What does one need to define before including `getline()`?
+	Define _GNU_SOURCE  buffer and capacity 
 
 5.  Write a C program to print out the content of a file line-by-line using `getline()`.
 
 ```c
 // Your code here
+	int main() {  
+	    char* buffer = NULL;  
+	    size_t num = 0;  
+	      
+	    ssize_t result = getline(&buffer, &num, stdin);  
+	      
+	    free(buffer);  
+	    return result;  
+	      
+	}  
+
 ```
 
 ### C Development
@@ -325,28 +349,31 @@ These are general tips for compiling and developing using a compiler and git. So
 
 
 1.  What compiler flag is used to generate a debug build?
-
+	make debug
 
 2.  You fix a problem in the Makefile and type `make` again. Explain why this may be insufficient to generate a new build.
+	The reason is that they are two kinds of modes so we will output a build with debug mode instead of a new build.
 
 
 3.  Are tabs or spaces used to indent the commands after the rule in a Makefile?
+	using tabs.
 
 
 4.  What does `git commit` do? What’s a `sha` in the context of git?
-
+	`git commit` records the changes to the repository and `sha` is a unique id to keep track of records.
+	
 
 5.  What does `git log` show you?
-
+	`git log` shows all the history commit informations.
 
 6.  What does `git status` tell you and how would the contents of `.gitignore` change its output?
-
+	`git status` will show paths that are different between the index file and the current HEAD commit and it simply will ignore the contents in `.gitignore`
 
 7.  What does `git push` do? Why is it not just sufficient to commit with `git commit -m ’fixed all bugs’ `?
-
-
+	`git push` will update all related objects in remote repository,  because git commit only update the records and have no effects to change the remote repo. 
+	
 8.  What does a non-fast-forward error `git push` reject mean? What is the most common way of dealing with this?
-
+	It means another person has pushed to the same branch and to deal with this we need to git pull.
 
 ### Optional: Just for fun
 
