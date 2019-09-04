@@ -185,11 +185,12 @@ sizeof(Y)
 Program arguments, environment variables, and working with character arrays (strings)
 
 1.  What are two ways to find the length of `argv`?
+	Print the argc or using for loop to count the number of argv
 
 2.  What does `argv[0]` represent?
-
+	Program name
 3.  Where are the pointers to environment variables stored (on the stack, the heap, somewhere else)?
-
+	They are located somewhere else and we can use extern to use them
 4.  On a machine where pointers are 8 bytes, and with the following code:
 
     ``` c
@@ -201,32 +202,35 @@ Program arguments, environment variables, and working with character arrays (str
 
 ```c
 // Your answer here
+	sizeof(ptr) == 8 and sizeof(array) ==6 because sizeof(ptr) actually the number of bytes to hold the char pointer which is 8 bytes and sizeof(array) is the size of total length to hold the array.
 ```
 
 5.  What data structure manages the lifetime of automatic variables?
+	Stack
 
 ### Chapter 4
 
 Heap and stack memory, and working with structs
 
 1.  If I want to use data after the lifetime of the function it was created in ends, where should I put it? How do I put it there?
-
+	Using keyword static in front of a variable or using malloc to allocate some heap memory are two feasible solutions If you want to use data after the lifetime of the function it was created in ends.
 2.  What are the differences between heap and stack memory?
-
+	Stack memory will free automatically after the function return, but heap memory will not free automatically and it will last until the end of program process or we manually free the memory.
 3.  Are there other kinds of memory in a process?
-
+	Kernel memory, Text segment, Data segment 
 4.  Fill in the blank: “In a good C program, for every malloc, there is a \_\_\_”.
-
+	"In a good C program, for every malloc, there is a free".
 5.  What is one reason `malloc` can fail?
-
+	Heap memory are full and cannot allocate new space.
 6.  What are some differences between `time()` and `ctime()`?
-
+	Time() is a system call which will return a time_t pointer, and ctime() is a function call in time library which will return a readable format of current time.
 7.  What is wrong with this code snippet?
 
 ``` c
 free(ptr);
 free(ptr);
 ```
+	Double free the same memory
 
 8.  What is wrong with this code snippet?
 
@@ -234,9 +238,10 @@ free(ptr);
 free(ptr);
 printf("%s\n", ptr);
 ```
+	Access some memory which already do not exist, and ptr becomes a dangling pointer
 
 9.  How can one avoid the previous two mistakes?
-
+	Only free memory once and after free the memory, assign the pointer to NULL
 
 10. Use the following space for the next four questions
 
@@ -247,9 +252,40 @@ printf("%s\n", ptr);
 
 // 13
 
-int main() {
-// 11
-}
+	struct Person {  
+	    char* name;  
+	    int age;  
+	    struct Person** list;  
+	};  
+	typedef struct Person Person;  
+	  
+	Person* create(const char* name, const int age){  
+	    Person* p = (Person*)malloc(sizeof(Person));  
+	    p->name = strdup(name);  
+	    p->age = age;  
+	    p->list = malloc(sizeof(Person*) * 10);  
+	    int i;  
+	    for (i=0; i<10; i++) {  
+	        p->list[i] = NULL;  
+	    }  
+	    return p;  
+	}  
+	void destory(Person* p){  
+	    free(p->list); p->list = NULL;  
+	    free(p->name); p->name = NULL;  
+	    free(p); p = NULL;  
+	}  
+	  
+	int main() {  
+	    Person* as = create("Agent Smith", 128);  
+	    Person* sm = create("Sonny Moore", 256);  
+	    as->list[0] = sm;  
+	    sm->list[0] = as;  
+	    destory(as);  
+	    destory(sm);  
+	    return 0;  
+	}
+
 ```
 
 * Create a `struct` that represents a `Person`. Then make a `typedef`, so that `struct Person` can be replaced with a single word. A person should contain the following information: their name (a string), their age (an integer), and a list of their friends (stored as a pointer to an array of pointers to `Person`s). 
