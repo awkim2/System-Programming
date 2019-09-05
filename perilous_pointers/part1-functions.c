@@ -21,8 +21,10 @@
  *     The grade to check.
  */
 void one(const char *grade) {
-    if (grade > 70)
-        printf("%f passed!\n", grade);
+    float g;
+    g = strtof(grade, NULL);
+    if (g > 70)
+        printf("%f passed!\n", g);
     else
         printf("%s not passed!\n", grade);
 }
@@ -33,7 +35,7 @@ void one(const char *grade) {
  */
 void two() {
     int x = 4;
-    int *p = x;
+    int *p = &x;
 
     printf("The value of p is: %d\n", *p);
 }
@@ -50,7 +52,7 @@ void two() {
  *     Second input parameter.
  */
 void three(const int *x, const int *y) {
-    if (x == y)
+    if (*x == *y)
         printf("x and y are equal.\n");
     else
         printf("x and y are different.\n");
@@ -69,7 +71,8 @@ void three(const int *x, const int *y) {
  *     contains the value of the input parameter.
  */
 float *four(const int *x) {
-    float *p = *x;
+    float *p = malloc(sizeof(int));
+    
     return p;
 }
 
@@ -82,7 +85,7 @@ float *four(const int *x) {
  *
  */
 void five(const char *a) {
-    if (a >= 'A' && a <= 'z')
+    if (*a >= 'A' && *a <= 'z')
         printf("a is a letter.\n");
     else
         printf("a is not a letter.\n");
