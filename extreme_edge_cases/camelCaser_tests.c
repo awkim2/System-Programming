@@ -195,5 +195,47 @@ int test_camelCaser(char **(*camelCaser)(const char *),
     // destroy(out);
     // free(except5);
 
+    //test 6
+    test = "This is ./ so hard.. i do wanna try / i just wanna give up. seriouSly! . .  ... ok. se.e .ya.";
+    out = camelCaser(test);
+    char** except6 = malloc(17*sizeof(char*));
+    except6[0] = "thisIs";
+    except6[1] = "";
+    except6[2] = "soHard";
+    except6[3] = "";
+    except6[4] = "iDoWannaTry";
+    except6[5] = "iJustWannaGiveUp";
+    except6[6] = "seriously";
+    except6[7] = "";
+    except6[8] = "";
+    except6[9] = "";
+    except6[10] = "";
+    except6[11] = "";
+    except6[12] = "ok";
+    except6[13] = "se";
+    except6[14] = "e";
+    except6[15] = "ya";
+    except6[16] = NULL;
+    
+
+    if((sizeof(except6)/sizeof(char*)) != (sizeof(test)/sizeof(char*))){
+        destroy(out);
+        free(except6);
+        return 0;
+    }
+
+    iter  = 0;
+    while(except6[iter]){
+        if(strcmp(except6[iter], out[iter]) != 0){
+            destroy(out);
+            free(except6);
+            return 0;
+        }
+        iter++;
+    }
+    destroy(out);
+    free(except6);
+
+
     return 1;
 }
