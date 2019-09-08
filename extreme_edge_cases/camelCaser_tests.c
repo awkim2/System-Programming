@@ -28,6 +28,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_0);
         return 0;
     }
+    
     //test single punct
     const char* pun = ".";
     char** out_pun = camelCaser(pun);
@@ -35,6 +36,14 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_pun);
         return 0;
     }
+
+
+    // const char* sp = " a ..a.";
+    // char** out_sp = camel_caser(sp);
+    // if(out_sp[0] != 'a'){
+    //     destroy(out_sp);
+    //     return 0;
+    // }
 
     //test1
     const char* test = "  . ..A.";
@@ -148,93 +157,95 @@ int test_camelCaser(char **(*camelCaser)(const char *),
     destroy(out);
     free(except4);
 
-    // //test5
-    // test = "7nG9k2vO8gmNL4yKcy1. kk81mqmKdWkpWgyL. GtxVB/C8Y370bA./6eZVh9I. o1jJ6VlkPlBJq.C,ke 6DZJVJe5U ..GnNT'Kjt4o1, 4jfeTzqlE5INinBj44eB0f!!! !ATZ8BvUM0xDWzgqeyFhEC RZhjo5kFD5VR0q7b, LfBMLhHOqW3n09.!ioviz9 LLMx. M05CaY3M/F2.  .uU47h8 kqTxEYZn d1MVh";
-    // out = camelCaser(test);
-    // char** except5 = malloc(24*sizeof(char*));
-    // except5[0] = "7ng9k2vo8gmnl4ykcy1";
-    // except5[1] = "kk81mqmkdwkpwgyl";
-    // except5[2] = "gtxvb";
-    // except5[3] = "c8y370ba";
-    // except5[4] = "";
-    // except5[5] = "6ezvh9i";
-    // except5[6] = "o1jj6vlkplbjq";
-    // except5[7] = "c";
-    // except5[8] = "ke6Dzjvje5u";
-    // except5[9] = "";
-    // except5[10] = "gnnt";
-    // except5[11] = "kjt4o1";
-    // except5[12] = "4jfetzqle5ininbj44eb0f";
-    // except5[13] = "";
-    // except5[14] = "";
-    // except5[15] = "";
-    // except5[16] = "atz8bvum0xdwzgqeyfhecRzhjo5kfd5vr0q7b";
-    // except5[17] = "lfbmlhhoqw3n09";
-    // except5[18] = "";
-    // except5[19] = "ioviz9Llmx";
-    // except5[20] = "m05cay3m";
-    // except5[21] = "f2";
-    // except5[22] = "";
-    // except5[23] = NULL;
+    //test5
+    char* test5 = "wbgnkxC5xF xKA@LH yGEE?eaVJLwkZ56fMuk^PTQ fuZGPveVsx3q nh@M7VXYz=^2y6n _MDcGg5S9N7QTb* +^Dv&K2FK2vL3g7&x+ +x2zM_-Zeg nw&5FJ 23X$d?$%y=M$!";
+    char** out5 = camelCaser(test5);
+    char** except5 = (char**)malloc(25*sizeof(char*));
+    except5[0] = "wbgnkxc5xfXka";
+    except5[1] = "lhYgee";
+    except5[2] = "eavjlwkz56fmuk";
+    except5[3] = "ptqFuzgpvevsx3qNh";
+    except5[4] = "m7vxyz";
+    except5[5] = "";
+    except5[6] = "2y6n";
+    except5[7] = "mdcgg5s9n7qtb";
+    except5[8] = "";
+    except5[9] = "";
+    except5[10] = "dv";
+    except5[11] = "k2fk2vl3g7";
+    except5[12] = "x";
+    except5[13] = "";
+    except5[14] = "x2zm";
+    except5[15] = "";
+    except5[16] = "zegNw";
+    except5[17] = "5fj23X";
+    except5[18] = "d";
+    except5[19] = "";
+    except5[20] = "";
+    except5[21] = "y";
+    except5[22] = "m";
+    except5[23] = "";
+    except5[24] = NULL;
 
-    // if((sizeof(except5)/sizeof(char*)) != (sizeof(test)/sizeof(char*))){
+    if((sizeof(except5)/sizeof(char*)) != (sizeof(out5)/sizeof(char*))){
+        destroy(out5);
+        free(except5);
+        return 0;
+    }
+
+    iter  = 0;
+    while(except5[iter]){
+        if(strcmp(except5[iter], out5[iter])){
+            //printf("%d\n",iter);
+            //printf("%s\n",out5[iter]);
+            destroy(out5);
+            free(except5);
+            return 0;
+        }
+        iter++;
+    }
+    destroy(out5);
+    free(except5);
+    //test 6
+    // test = "This is ./ so hard.. i do wanna try / i just wanna give up. seriouSly! . .  ... ok. se.e .ya.";
+    // out = camelCaser(test);
+    // char** except6 = malloc(17*sizeof(char*));
+    // except6[0] = "thisIs";
+    // except6[1] = "";
+    // except6[2] = "soHard";
+    // except6[3] = "";
+    // except6[4] = "iDoWannaTry";
+    // except6[5] = "iJustWannaGiveUp";
+    // except6[6] = "seriously";
+    // except6[7] = "";
+    // except6[8] = "";
+    // except6[9] = "";
+    // except6[10] = "";
+    // except6[11] = "";
+    // except6[12] = "ok";
+    // except6[13] = "se";
+    // except6[14] = "e";
+    // except6[15] = "ya";
+    // except6[16] = NULL;
+    
+
+    // if((sizeof(except6)/sizeof(char*)) != (sizeof(test)/sizeof(char*))){
     //     destroy(out);
-    //     free(except5);
+    //     free(except6);
     //     return 0;
     // }
 
     // iter  = 0;
-    // while(except5[iter]){
-    //     if(strcmp(except5[iter], out[iter]) != 0){
+    // while(except6[iter]){
+    //     if(strcmp(except6[iter], out[iter]) != 0){
     //         destroy(out);
-    //         free(except5);
+    //         free(except6);
     //         return 0;
     //     }
     //     iter++;
     // }
     // destroy(out);
-    // free(except5);
-
-    //test 6
-    test = "This is ./ so hard.. i do wanna try / i just wanna give up. seriouSly! . .  ... ok. se.e .ya.";
-    out = camelCaser(test);
-    char** except6 = malloc(17*sizeof(char*));
-    except6[0] = "thisIs";
-    except6[1] = "";
-    except6[2] = "soHard";
-    except6[3] = "";
-    except6[4] = "iDoWannaTry";
-    except6[5] = "iJustWannaGiveUp";
-    except6[6] = "seriously";
-    except6[7] = "";
-    except6[8] = "";
-    except6[9] = "";
-    except6[10] = "";
-    except6[11] = "";
-    except6[12] = "ok";
-    except6[13] = "se";
-    except6[14] = "e";
-    except6[15] = "ya";
-    except6[16] = NULL;
-    
-
-    if((sizeof(except6)/sizeof(char*)) != (sizeof(test)/sizeof(char*))){
-        destroy(out);
-        free(except6);
-        return 0;
-    }
-
-    iter  = 0;
-    while(except6[iter]){
-        if(strcmp(except6[iter], out[iter]) != 0){
-            destroy(out);
-            free(except6);
-            return 0;
-        }
-        iter++;
-    }
-    destroy(out);
-    free(except6);
+    // free(except6);
 
 
     return 1;

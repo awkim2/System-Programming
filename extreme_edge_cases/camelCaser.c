@@ -69,13 +69,13 @@ char **camel_caser(const char *input_str) {
             if (isalpha(input_c)) {
                 if(cap && !start_C){
                     result_c = toupper(input_c);
+                     cap = 0;
                 }else{
                     result_c = tolower(input_c);
                 }
             } else {
                 result_c = input_c;
             }
-            cap = 0;
             start_C = 0;
             result[sentence][k] = result_c;
             k++;

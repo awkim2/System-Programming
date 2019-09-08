@@ -72,7 +72,7 @@ void three(const int *x, const int *y) {
  */
 float *four(const int *x) {
     float *p = malloc(sizeof(int));
-    
+    *p = *x;
     return p;
 }
 
@@ -97,16 +97,17 @@ void five(const char *a) {
  * prints the concatenated string.
  */
 void six(const char *str) {
-    char *s = "Hello ";
-    strcat(s, str);
-    printf("%s\n", s);
+    char *result = malloc(sizeof(15));
+    strcpy(result, "Hello ");
+    strcat(result, str);
+    printf("%s\n", result);
 }
 
 /**
  * Creates an array of values containing the values {0.0, 0.1, ..., 0.9}.
  */
 void seven() {
-    float *values;
+    float values[10];
 
     int i, n = 10;
     for (i = 0; i < n; i++)
@@ -124,14 +125,22 @@ void eight(int a) {
     int **values;
 
     int i, j;
-    values = malloc(10 * sizeof(int));
-    for (i = 0; i < 10; i++)
-        for (j = 0; j < 10; j++)
+    values = (int**)malloc(10 * sizeof(int*));
+    for (i = 0; i < 10; i++){
+        values[i] = (int*)malloc(10 * sizeof(int));
+        for (j = 0; j < 10; j++){
             values[i][j] = i * j * a;
-
+        }
+    }
     for (i = 0; i < 10; i++)
         printf("%d ", values[i][i]);
     printf("\n");
+
+    for(i=0; i<10; i++)
+    {
+      free(values[i]);
+    }
+    free(values);
 }
 
 /**
@@ -145,12 +154,12 @@ void eight(int a) {
  *     Input parameter, used to determine which string is printed.
  */
 void nine(const char *s) {
-    switch (s) {
-    case "blue":
+    switch (s[0]) {
+    case 'b':
         printf("Orange and BLUE!\n");
         break;
 
-    case "orange":
+    case 'o':
         printf("ORANGE and blue!\n");
         break;
 
@@ -167,7 +176,7 @@ void nine(const char *s) {
  *     The diameter of the circle.
  */
 void ten(const int d) {
-    printf("The radius of the circle is: %f.\n", d / 2);
+    printf("The radius of the circle is: %f.\n", d / 2.0);
 }
 
 /**
@@ -177,9 +186,9 @@ void ten(const int d) {
  * This function will apply the following rules to the number stored
  * in the input parameter "value":
  * (1): If a specific bit is set in BOTH "value" and "flag", that
- *      bit is NOT SET in the result.
+ *      bit is NOT SET in the result. 1 1 0
  * (2): If a specific bit is set ONLY in "value", that bit IS SET
- *      in the result.
+ *      in the result. 1 0 1
  * (3): All other bits are NOT SET in the result.
  *
  * Examples:
@@ -195,6 +204,7 @@ void ten(const int d) {
  */
 long int clear_bits(long int value, long int flag) {
     // TODO clear_bits
+    return 1;
 }
 
 /**
