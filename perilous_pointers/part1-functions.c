@@ -85,7 +85,7 @@ float *four(const int *x) {
  *
  */
 void five(const char *a) {
-    if (*a >= 'A' && *a <= 'z')
+    if ((a[0] >= 'A' && a[0] <= 'Z')|| (a[0] >= 'a' && a[0] <= 'z'))
         printf("a is a letter.\n");
     else
         printf("a is not a letter.\n");
@@ -101,6 +101,7 @@ void six(const char *str) {
     strcpy(result, "Hello ");
     strcat(result, str);
     printf("%s\n", result);
+    free(result);
 }
 
 /**
@@ -204,7 +205,8 @@ void ten(const int d) {
  */
 long int clear_bits(long int value, long int flag) {
     // TODO clear_bits
-    return 1;
+    long int res = (value^flag)&value;
+    return res;
 }
 
 /**
@@ -236,6 +238,9 @@ long int clear_bits(long int value, long int flag) {
 int little_automaton(int (*transition)(int, char), const char *input_string) {
     int state = 0;
     // put something here
-
+    while(*input_string){
+        state = transition(state, *input_string);
+        input_string++;
+    }
     return state;
 }
