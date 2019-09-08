@@ -8,7 +8,7 @@
 
 int main() {
     // Enter the string you want to test with the reference here
-    char *input = "wbgnkxC5xF xKA@LH yGEE?eaVJLwkZ56fMuk^PTQ fuZGPveVsx3q nh@M7VXYz=^2y6n _MDcGg5S9N7QTb* +^Dv&K2FK2vL3g7&x+ +x2zM_-Zeg nw&5FJ 23X$d?$%y=M$!";
+    char *input = "9hMT ?W?ACTr cFS443xuk_r^u 9pr^yYP ZEqR#^4 _ED*F$T_U cJWHF^fg HY+=c aT_E EpHT*AbPN Ag$Rez7+%zHKrpNHRpB+E%*r _Ju?c7d+ =EwM6 *w+5Lt#U3hnV55fEmw";
   
     // This function prints the reference implementation output on the terminal
     print_camelCaser(input);
