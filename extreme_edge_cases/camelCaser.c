@@ -11,7 +11,7 @@ char **camel_caser(const char *input_str) {
     // TODO: Implement me!
 
     // NULL case
-    if (!input_str || *input_str == '\0') return NULL;
+    if (!input_str) return NULL;
 
 
     //get_sentence_count

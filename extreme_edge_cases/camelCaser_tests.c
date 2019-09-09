@@ -400,10 +400,11 @@ int test_camelCaser(char **(*camelCaser)(const char *),
     //test12
     const char* test_empty = "";
     char** out_empty = camelCaser(test_empty);
-    if(out_empty != NULL){
+    if(out_empty[0] != NULL){
         destroy(out_empty);
         return 0;
     }
+
 
     //test13
     test = "aa cc\nbb. dd.";
@@ -468,7 +469,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
 
     const char* test_final = " ";
     char** out_final = camelCaser(test_final);
-    if(*out_final != NULL){
+    if(out_final[0] != NULL){
         destroy(out_final);
         return 0;
     }
