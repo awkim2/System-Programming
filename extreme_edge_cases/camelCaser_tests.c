@@ -404,7 +404,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_empty);
         return 0;
     }
-
+    destroy(out_empty);
 
     //test13
     test = "aa cc\nbb. dd.";
@@ -465,7 +465,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out);
         return 0;
     }
-
+    destroy(out);
 
     const char* test_final = " ";
     char** out_final = camelCaser(test_final);
@@ -473,7 +473,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_final);
         return 0;
     }
- 
+    destroy(out_final);
 
 
 
