@@ -28,7 +28,7 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_0);
         return 0;
     }
-    
+
     //test single punct 2
     const char* pun = ".";
     char** out_pun = camelCaser(pun);
@@ -36,14 +36,16 @@ int test_camelCaser(char **(*camelCaser)(const char *),
         destroy(out_pun);
         return 0;
     }
+    destroy(out_pun);
 
     //test 3
     const char* sp = " a ..a.";
-    char** out_sp = camel_caser(sp);
+    char** out_sp = camelCaser(sp);
     if(out_sp[0][0] != 'a'){
         destroy(out_sp);
         return 0;
     }
+    destroy(out_sp);
 
     //test4
     const char* test = "  . ..A.";
@@ -343,64 +345,139 @@ int test_camelCaser(char **(*camelCaser)(const char *),
     free(except9);
 
     //test 10
-    test = "9hMT ?W?ACTr cFS443xuk_r^u 9pr^yYP ZEqR#^4 _ED*F$T_U cJWHF^fg HY+=c aT_E EpHT*AbPN Ag$Rez7+%zHKrpNHRpB+E%*r _Ju?c7d+ =EwM6 *w+5Lt#U3hnV55fEmw";
+    // test = "9hMT ?W?ACTr cFS443xuk_r^u 9pr^yYP ZEqR#^4 _ED*F$T_U cJWHF^fg HY+=c aT_E EpHT*AbPN Ag$Rez7+%zHKrpNHRpB+E%*r _Ju?c7d+ =EwM6 *w+5Lt#U3hnV55fEmw";
+    // out = camelCaser(test);
+    // char** except10 = malloc(30*sizeof(char*));
+    // except10[0] = "9hmt";
+    // except10[1] = "w";
+    // except10[2] = "actrCfs443xuk";
+    // except10[3] = "r";
+    // except10[4] = "u9Pr";
+    // except10[5] = "yypZeqr";
+    // except10[6] = "";
+    // except10[7] = "4";
+    // except10[8] = "ed";
+    // except10[9] = "f";
+    // except10[10] = "t";
+    // except10[11] = "uCjwhf";
+    // except10[12] = "fgHy";
+    // except10[13] = "";
+    // except10[14] = "cAt";
+    // except10[15] = "eEpht";
+    // except10[16] = "abpnAg";
+    // except10[17] = "rez7";
+    // except10[18] = "";
+    // except10[19] = "zhkrpnhrpb";
+    // except10[20] = "e";
+    // except10[21] = "";
+    // except10[22] = "r";
+    // except10[23] = "ju";
+    // except10[24] = "c7d";
+    // except10[25] = "";
+    // except10[26] = "ewm6";
+    // except10[27] = "w";
+    // except10[28] = "5lt";
+    // except10[29] = NULL;
+    // if((sizeof(except10)/sizeof(char*)) != (sizeof(out)/sizeof(char*))){
+    //     destroy(out);
+    //     free(except10);
+    //     return 0;
+    // }
+
+    // iter  = 0;
+    // while(except10[iter]){
+    //     if(strcmp(except10[iter], out[iter]) != 0){
+    //         //printf("return at %s with iter %d",except10[iter], iter);
+    //         destroy(out);
+    //         free(except10);
+    //         return 0;
+    //     }
+    //     iter++;
+    // }
+    // destroy(out);
+    // free(except10);
+
+    //test12
+    const char* test_empty = "";
+    char** out_empty = camelCaser(test_empty);
+    if(out_empty != NULL){
+        destroy(out_empty);
+        return 0;
+    }
+
+    //test13
+    test = "aa cc\nbb. dd.";
     out = camelCaser(test);
-    char** except10 = malloc(30*sizeof(char*));
-    except10[0] = "9hmt";
-    except10[1] = "w";
-    except10[2] = "actrCfs443xuk";
-    except10[3] = "r";
-    except10[4] = "u9Pr";
-    except10[5] = "yypZeqr";
-    except10[6] = "";
-    except10[7] = "4";
-    except10[8] = "ed";
-    except10[9] = "f";
-    except10[10] = "t";
-    except10[11] = "uCjwhf";
-    except10[12] = "fgHy";
-    except10[13] = "";
-    except10[14] = "cAt";
-    except10[15] = "eEpht";
-    except10[16] = "abpnAg";
-    except10[17] = "rez7";
-    except10[18] = "";
-    except10[19] = "zhkrpnhrpb";
-    except10[20] = "e";
-    except10[21] = "";
-    except10[22] = "r";
-    except10[23] = "ju";
-    except10[24] = "c7d";
-    except10[25] = "";
-    except10[26] = "ewm6";
-    except10[27] = "w";
-    except10[28] = "5lt";
-    except10[29] = NULL;
-    if((sizeof(except10)/sizeof(char*)) != (sizeof(out)/sizeof(char*))){
+    char** except13 = malloc(3*sizeof(char*));
+    except13[0] = "aaCcBb";
+    except13[1] = "dd";
+    except13[2] = NULL;
+
+    if((sizeof(except13)/sizeof(char*)) != (sizeof(out)/sizeof(char*))){
         destroy(out);
-        free(except10);
+        free(except13);
         return 0;
     }
 
     iter  = 0;
-    while(except10[iter]){
-        if(strcmp(except10[iter], out[iter]) != 0){
+    while(except13[iter]){
+        if(strcmp(except13[iter], out[iter]) != 0){
             //printf("return at %s with iter %d",except10[iter], iter);
             destroy(out);
-            free(except10);
+            free(except13);
             return 0;
         }
         iter++;
     }
     destroy(out);
-    free(except10);
+    free(except13);
+
+    //test11
+    test =  "\1\2\3\4\\5";
+    out  = camelCaser(test);
+    char** except11 = malloc(2*sizeof(char*));
+    except11[0] = "\1\2\3\4";
+    except11[1] = NULL;
+
+    if((sizeof(except11)/sizeof(char*)) != (sizeof(out)/sizeof(char*))){
+        destroy(out);
+        free(except11);
+        return 0;
+    }
+
+    iter  = 0;
+    while(except11[iter]){
+        if(strcmp(except11[iter], out[iter]) != 0){
+            //printf("return at %s with iter %d",except10[iter], iter);
+            destroy(out);
+            free(except11);
+            return 0;
+        }
+        iter++;
+    }
+    destroy(out);
+    free(except11);
+
+    test = "aa";
+    out = camelCaser(test);
+    if(out[0] != NULL){
+        destroy(out);
+        return 0;
+    }
 
 
-   // printf("pass all test\n");
+    const char* test_final = " ";
+    char** out_final = camelCaser(test_final);
+    if(*out_final != NULL){
+        destroy(out_final);
+        return 0;
+    }
+ 
 
 
 
 
+    
     return 1;
 }
 
