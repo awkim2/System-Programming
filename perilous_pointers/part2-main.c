@@ -67,7 +67,7 @@ int main() {
     char* intptr = (char*)(&a);
     it_may_be_odd(intptr,a);
 
-    char tok[10] = "aaab,CS241";
+    char tok[10] = "aaa,CS241";
     tok_step(tok);
 
     char * end = malloc(4);

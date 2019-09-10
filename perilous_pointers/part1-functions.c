@@ -97,7 +97,7 @@ void five(const char *a) {
  * prints the concatenated string.
  */
 void six(const char *str) {
-    char *result = malloc(sizeof(15));
+    char *result = malloc(15);
     strcpy(result, "Hello ");
     strcat(result, str);
     printf("%s\n", result);
@@ -138,7 +138,7 @@ void eight(int a) {
     printf("\n");
 
     for(i=0; i<10; i++)
-    {
+    {  
       free(values[i]);
     }
     free(values);
