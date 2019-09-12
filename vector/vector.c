@@ -177,6 +177,11 @@ void vector_resize(vector *this, size_t n) {
 
     if(n > this->capacity){
         vector_reserve(this, n);
+        size_t i = this->size;
+        for(; i < n; i++){
+            this->array[i] = this->default_constructor();
+        }
+        this->size = n;
         return;
     }
     return;
