@@ -120,20 +120,15 @@ void vector_destroy(vector *this) {
     assert(this);
     // your code here
     int i = 0;
-    void* elem;
-    while((elem = this->array[i])){
-        this->destructor(elem);
+    while(this->array[i]){
+        this->destructor(this->array[i]);
         i++;
     }
-    this->capacity =0;
+    // this->capacity =0;
     this->size = 0;
-    this->copy_constructor = NULL;
-    this->default_constructor = NULL;
-    this->destructor = NULL;
-    // while(this->array[i]){
-    //     free(this->array[i]);
-    //     i++;
-    // }
+    // this->copy_constructor = NULL;
+    // this->default_constructor = NULL;
+    // this->destructor = NULL;
     free(this->array);
     free(this);
 }
@@ -263,16 +258,24 @@ void **vector_back(vector *this) {
 
 void vector_push_back(vector *this, void *element) {
     assert(this);
-    assert(element);
+    //assert(element);
     // your code here
     if(this->size < this->capacity){
-        this->array[this->size] = this->copy_constructor(element);
+        if(element){
+            this->array[this->size] = this->copy_constructor(element);
+        }else{
+            this->array[this->size] = NULL;
+        }
         this->size++;
         return;
     }
     if(this->size == this->capacity){
         vector_reserve(this, this->size+1);
-        this->array[this->size] = this->copy_constructor(element);
+        if(element){
+            this->array[this->size] = this->copy_constructor(element);
+        }else{
+            this->array[this->size] = NULL;
+        }
         this->size++;
         return;
     } 
@@ -291,7 +294,7 @@ void vector_pop_back(vector *this) {
 
 void vector_insert(vector *this, size_t position, void *element) {
     assert(this);
-    assert(element);
+    //assert(element);
     // your code here
     if(this->size == this->capacity){
         vector_reserve(this, this->size+1);
