@@ -23,17 +23,13 @@ int main(int argc, char *argv[]) {
     // printf("%s\n", d);
 
 
+    // sstring_split(cstr_to_sstring("abcdeefg"), 'e');
 
-    sstring *str1 = cstr_to_sstring("abcdefghijk");
-    sstring *str2 = cstr_to_sstring("def");
-    printf("%s\n", str1->sc);
-    printf("%s\n", str2->sc);
-    char* re = sstring_to_cstr(str2);
-    printf("%s\n", re);
-    char* slice = sstring_slice(str1, 2, 5);
-    printf("%s\n", slice);
-    printf("size of slice =%lu, strlen = %lu\n", sizeof(slice), strlen(slice));
-    // int len = sstring_append(str1, str2); // len == 6
-    // sstring_to_cstr(str1); // == "abcdef"
+     // == [ "This", "is", "a", "sentence." ]
+    sstring *replace_me = cstr_to_sstring("This is a {} day, {}!");
+    sstring_substitute(replace_me, 18, "{}", "friend");
+
+    sstring_substitute(replace_me, 0, "{}", "good");
+    sstring_to_cstr(replace_me); // == "This is a good day, friend!"
     return 0;
 }
