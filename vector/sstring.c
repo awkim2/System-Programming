@@ -45,7 +45,6 @@ vector *sstring_split(sstring *this, char delimiter) {
         if(*temp == delimiter)  numofd++;
         temp++;
     }
-    printf("delimiter = %lu\n", numofd);
     temp = this->sc;
     char* temp2 = this->sc;
     size_t count = 0;
@@ -83,7 +82,6 @@ int sstring_substitute(sstring *this, size_t offset, char *target,
     this->sc = realloc(this->sc, strlen(temp)+1);
     strcpy(this->sc, temp);
     free(temp);
-    printf("%s\n", this->sc);
     return 0;
 }
 
