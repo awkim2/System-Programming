@@ -119,16 +119,12 @@ vector *vector_create(copy_constructor_type copy_constructor,
 void vector_destroy(vector *this) {
     assert(this);
     // your code here
-    int i = 0;
-    while(this->array[i]){
-        this->destructor(this->array[i]);
-        i++;
+    for(size_t i = 0; i < this->size; i++){
+        if(this->array[i]){
+            this->destructor(this->array[i]);
+        }
     }
-    // this->capacity =0;
     this->size = 0;
-    // this->copy_constructor = NULL;
-    // this->default_constructor = NULL;
-    // this->destructor = NULL;
     free(this->array);
     free(this);
 }
@@ -201,7 +197,6 @@ void vector_reserve(vector *this, size_t n) {
     if(n <= this->capacity) return;
     this->capacity = get_new_capacity(n);
     this->array = realloc(this->array,this->capacity*sizeof(void*));
-    return;
 }
 
 void **vector_at(vector *this, size_t position) {
@@ -224,7 +219,6 @@ void vector_set(vector *this, size_t position, void *element) {
         this->array[position] = NULL;
     }
 
-    return;
 }
 
 void *vector_get(vector *this, size_t position) {
@@ -258,28 +252,15 @@ void **vector_back(vector *this) {
 
 void vector_push_back(vector *this, void *element) {
     assert(this);
-    //assert(element);
     // your code here
-    if(this->size < this->capacity){
-        if(element){
-            this->array[this->size] = this->copy_constructor(element);
-        }else{
-            this->array[this->size] = NULL;
-        }
-        this->size++;
-        return;
-    }
     if(this->size == this->capacity){
         vector_reserve(this, this->size+1);
-        if(element){
-            this->array[this->size] = this->copy_constructor(element);
-        }else{
-            this->array[this->size] = NULL;
-        }
+        this->array[this->size] = this->copy_constructor(element);
         this->size++;
-        return;
-    } 
-    return;
+    }else{
+        this->array[this->size] = this->copy_constructor(element);
+        this->size++;
+    }
 }
 
 void vector_pop_back(vector *this) {
@@ -289,7 +270,6 @@ void vector_pop_back(vector *this) {
         this->destructor(this->array[this->size-1]);
     }
     this->size--;
-    return;
 }
 
 void vector_insert(vector *this, size_t position, void *element) {
@@ -305,7 +285,6 @@ void vector_insert(vector *this, size_t position, void *element) {
     }
     this->array[position] = this->copy_constructor(element);
     this->size++;
-    return;
 }
 
 void vector_erase(vector *this, size_t position) {
@@ -319,7 +298,6 @@ void vector_erase(vector *this, size_t position) {
     }
     this->array[this->size-1] = NULL;
     this->size--;
-    return;
 }
 
 void vector_clear(vector *this) {
@@ -331,7 +309,6 @@ void vector_clear(vector *this) {
         this->destructor(this->array[i]);
     }
     this->size = 0;
-    return;
 }
 
 // The following is code generated:

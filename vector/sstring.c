@@ -14,42 +14,43 @@
 
 struct sstring {
     // Anything you want
-    vector * svec;
+    char * sc;
 };
 
 sstring *cstr_to_sstring(const char *input) {
     // your code goes here
     sstring *sstr = calloc(1,sizeof(sstring));
-    sstr->svec = char_vector_create();
-    size_t i = 0;
-    for(; i <= strlen(input)+1; i++){
-        vector_push_back(sstr->svec, (char*)(input));
-        input++;
-    }
+    sstr->sc = strdup(input);
     return sstr;
 }
 
 char *sstring_to_cstr(sstring *input) {
     // your code goes here
-    char* cstr = calloc(vector_size(input->svec), 1);
-    for(size_t i = 0; i < vector_size(input->svec); i++){
-        cstr[i] = *(char*)vector_get(input->svec, i);
-    }
-    return cstr;
+    return strdup(input->sc);
 }
 
 int sstring_append(sstring *this, sstring *addition) {
     // your code goes here
-    for (size_t i = 0; i < vector_size(addition->svec); i++)
-    {
-        vector_push_back(this->svec, vector_get(addition->svec, i));
-    }
-    return vector_size(this->svec);
+    this->sc = realloc(this->sc, strlen(this->sc)+strlen(addition->sc)+1);
+    strcat(this->sc, addition->sc); 
+    return strlen(this->sc);
 }
 
 vector *sstring_split(sstring *this, char delimiter) {
     // your code goes here
-    
+    // int numofd = 0;
+    // char* temp = this->sc;
+    // while(temp){
+    //     if(*temp == delimiter)  numofd++;
+    //     temp++;
+    // }
+    // prinff("delimiter = %d", numofd);
+    // temp = this->sc;
+    // for(int i = 0; i < numofd; i++){
+    //     if(temp[i] == delimiter){
+    //         temp[i] = '\0';
+    //     }
+    // }
     return NULL;
 }
 
@@ -61,9 +62,15 @@ int sstring_substitute(sstring *this, size_t offset, char *target,
 
 char *sstring_slice(sstring *this, int start, int end) {
     // your code goes here
-    return NULL;
+    char * begin = this->sc + start;
+    char * slice = malloc(end-start+1);
+    strncpy(slice, begin, end - start);
+    slice[end-start] = '\0';
+    return slice;
 }
 
 void sstring_destroy(sstring *this) {
+    free(this->sc);
+    free(this);
     // your code goes here
 }
