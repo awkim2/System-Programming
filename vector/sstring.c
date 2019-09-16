@@ -60,11 +60,6 @@ vector *sstring_split(sstring *this, char delimiter) {
         temp++;
     }
     vector_push_back(vv, temp);
-    // printf("push count %lu\n", count);
-    // printf("%s\n", vector_get(vv,0));
-    // printf("%s\n", vector_get(vv,1));
-    // printf("%s\n", vector_get(vv,2));
-    // printf("%s\n", vector_get(vv,3));
     return vv;
 }
 
