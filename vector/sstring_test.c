@@ -26,10 +26,10 @@ int main(int argc, char *argv[]) {
     // sstring_split(cstr_to_sstring("abcdeefg"), 'e');
 
      // == [ "This", "is", "a", "sentence." ]
-    sstring *replace_me = cstr_to_sstring("This is a {} day, {}!");
-    sstring_substitute(replace_me, 18, "{}", "friend");
+    // sstring *replace_me = cstr_to_sstring("This is a {} day, {}!");
+    // sstring_substitute(replace_me, 18, "{}", "friend");
 
-    sstring_substitute(replace_me, 0, "{}", "good");
-    sstring_to_cstr(replace_me); // == "This is a good day, friend!"
+    // sstring_substitute(replace_me, 0, "{}", "good");
+    // sstring_to_cstr(replace_me); // == "This is a good day, friend!"
     return 0;
 }

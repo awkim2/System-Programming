@@ -72,6 +72,7 @@ int sstring_substitute(sstring *this, size_t offset, char *target,
     size_t newlen = strlen(this->sc) - strlen(target) + strlen(substitution);
     char* temp = malloc(newlen+1);
     strncpy(temp,this->sc, (strlen(this->sc)- strlen(sub)));
+    temp[(strlen(this->sc)- strlen(sub))] = '\0';
     strcat(temp, substitution);
     strcat(temp, &sub[strlen(target)]);
     this->sc = realloc(this->sc, strlen(temp)+1);
