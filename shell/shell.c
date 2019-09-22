@@ -15,7 +15,7 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-static int excuted = 0;
+static int fail = 0;
 
 typedef struct process {
     char *command;
@@ -82,8 +82,10 @@ void buildin_cd(char* dir){
     int temp = chdir(dir);
     if(temp != 0){
         print_no_directory(dir);
+        fail = 1;
         return;
     }
+
 }
 
 void buildin_history(vector* history){
@@ -121,17 +123,25 @@ char* buildin_prefix(vector* history, char* buffer){
 
 void extern_comm(char** spl){
     int pid = fork();
-    if(pid == -1) print_fork_failed();
-    if(pid == 0){
+    if(pid == -1){
+        print_fork_failed();
+        fail = 1;
+    }else if(pid == 0){
         int childpid = getpid();
         print_command_executed(childpid);
         int status = execvp(spl[0], &spl[0]);
-        if(status == -1) print_exec_failed(spl[0]);
+        if(status == -1){
+            print_exec_failed(spl[0]);
+            fail = 1;
+        }
         exit(1);
     }else{
-    int status2;
-    waitpid(pid,&status2,0);
-    if(!WIFEXITED(status2)) print_wait_failed();
+        int status2;
+        waitpid(pid,&status2,0);
+        if(!WIFEXITED(status2)){
+            print_wait_failed();
+            fail = 1;
+        }
     }
 }
 
@@ -146,15 +156,27 @@ void command_set(char** spl, vector* history, char* buffer){
         }
 
 }
-// void logic_and(char* buffer){
-//         char** logicspl = strsplit(input, "&&");
-//         logicspl[0][strlen(logicspl[0])-1] = 0;
-//         char* comm_1 = logicspl[0];
-//         if(!strcmp(spl[0],"cd")){
-            
-//         }
+void logic_and(char* buffer){
+        char** logicspl = strsplit(buffer, "&&");
+        char* comm1 = logicspl[0];
+        char* comm2 = logicspl[1];
+        char** comm1_spl = strsplit(comm1, " ");
+        char** comm2_spl = strsplit(comm2, " ");
+        if(!strcmp(comm1_spl[0], "cd")){
+            buildin_cd(comm1_spl[1]);
+        }else{
+            extern_comm(comm1_spl);
+        }
 
-// }
+        if(fail != 1){
+            if(!strcmp(comm2_spl[0], "cd")){
+                buildin_cd(comm2_spl[1]);
+            }else{
+                extern_comm(comm2_spl+1);
+            }
+       }
+}
+
 int shell(int argc, char *argv[]) {
     // TODO: This is the entry point for your shell.
 
@@ -185,12 +207,13 @@ int shell(int argc, char *argv[]) {
             break;
         }
         spl = strsplit(buffer, " ");
-
-        // if(strstr(buffer, "&&")){
-        //     logic_and(buffer);
-        //     vector_push_back(history,buffer);
-        //     continue;
-        // }
+        
+        //&&
+        if(strstr(buffer, "&&")){
+            logic_and(buffer);
+            vector_push_back(history,buffer);
+            continue;
+        }
 
         if(!strcmp(spl[0], "cd")){
             buildin_cd(spl[1]);
@@ -220,7 +243,6 @@ int shell(int argc, char *argv[]) {
         if(buffer[0] == '!' && strcmp(buffer, "!history")){
             char* comm2 = NULL;
             comm2 = buildin_prefix(history, buffer+1);
-            excuted = 1;
             if(comm2){
                 char** splcomm2 = NULL;
                 splcomm2 = strsplit(comm2, " ");
