@@ -2,3 +2,6 @@ cd ..
 ls
 sleep 2
 echo Finished!
+cd libs
+cd shell
+cd libs
