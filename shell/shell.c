@@ -193,6 +193,7 @@ void logic_and(char* buffer){
         char** logicspl = strsplit(buffer, "&&");
         char* comm1 = logicspl[0];
         char* comm2 = logicspl[2];
+        comm1[strlen(comm1) - 1] = 0;
         if (comm2[0] == ' ') memmove(comm2, comm2+1, strlen(comm2));
         char** comm1_spl = strsplit(comm1, " ");
         char** comm2_spl = strsplit(comm2, " ");
@@ -219,6 +220,7 @@ void logic_or(char* buffer){
         char** logicspl = strsplit(buffer, "||");
         char* comm1 = logicspl[0];
         char* comm2 = logicspl[2];
+        comm1[strlen(comm1) - 1] = 0;
         if (comm2[0] == ' ') memmove(comm2, comm2+1, strlen(comm2));
         char** comm1_spl = strsplit(comm1, " ");
         char** comm2_spl = strsplit(comm2, " ");
