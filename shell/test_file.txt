@@ -5,3 +5,7 @@ echo Finished!
 cd libs
 cd shell
 cd libs
+[A
+cd 123
+echo 123
+cd 333
