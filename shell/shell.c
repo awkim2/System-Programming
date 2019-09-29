@@ -12,8 +12,13 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <ctype.h>
+#include <dirent.h> 
+
+
 extern char *optarg;
 extern int optind, opterr, optopt;
+
 
 static int fail = 0;
 
@@ -23,37 +28,100 @@ typedef struct process {
     pid_t pid;
 } process;
 
-// struct vector {
-//     /* The function callback for the user to define the way they want to copy
-//      * elements */
-//     copy_constructor_type copy_constructor;
+static vector *process_vector;
 
-//     /* The function callback for the user to define the way they want to destroy
-//      * elements */
-//     destructor_type destructor;
+process* process_create(char* buffer, pid_t pid){
+    process *new_proc = calloc(1, sizeof(process));
+    new_proc->command = calloc(strlen(buffer)+1, sizeof(char));
+    strcpy(new_proc->command, buffer);
+    new_proc->pid = pid;
+    return new_proc;
+}
 
-//     /* The function callback for the user to define the way they a default
-//      * element to be constructed */
-//     default_constructor_type default_constructor;
+process_info* info_create(char* command, pid_t pid){
+  process_info *info = calloc(1, sizeof(process_info));
+  info->command = calloc(strlen(command)+1, sizeof(char));
+  strcpy(info->command, command);
+  info->pid = pid;
+  char path[40];
+  char line[1000];
+  char* it;
+  snprintf(path, 40, "/proc/%d/status", pid);
+  FILE *fp = fopen(path,"r");
+  if (!fp) {
+      print_script_file_error();
+      exit(1);
+  }
+  while(fgets(line, 100, fp)) {
+      if(!strncmp(line, "State:", 6)) {
+        it = line + 7;
+        while(isspace(*it)) ++it;
+        info->state = *it;
+      } else if (!strncmp(line, "Threads:", 8)) {
+        it = line + 9;
+        while(isspace(*it)) ++it;
+        info->nthreads = strtol(it, NULL, 10);
+      } else if (!strncmp(line, "VmSize:", 7)) {
+        it = line + 8;
+        while(isspace(*it)) ++it;
+        info->vsize = strtol(it, NULL, 10);
+      }
+  }
+  fclose(fp);
 
-//     /* Void pointer to the beginning of an array of void pointers to arbitrary
-//      * data. */
-//     void **array;
+  snprintf(path, 40, "/proc/%d/stat", pid);
+  FILE *fp2 = fopen(path,"r");
+  if (!fp2) {
+      print_script_file_error();
+      exit(1);
+  }
+  fgets(line, 1000, fp2);
+  fclose(fp2);
+  it = strtok(line, " ");
+  int i = 0;
+  unsigned long utime, stime;
+  unsigned long long starttime;
+  while(it != NULL)
+	{
+    if (i == 13) {
+      utime = strtol(it, NULL, 10);
+    } else if (i == 14) {
+      stime = strtol(it, NULL, 10);
+    } else if (i == 21) {
+      starttime = strtol(it, NULL, 10);
+    }
+    it = strtok(NULL, " ");
+	i++;
+	}
 
-//     /**
-//      * The number of elements in the vector.
-//      * This is the number of actual objects held in the vector,
-//      * which is not necessarily equal to its capacity.
-//      */
-//     size_t size;
+  char buffer_cpu[100];
+  unsigned long total_seconds_cpu = (utime+stime)/sysconf(_SC_CLK_TCK);
+  if (!execution_time_to_string(buffer_cpu, 100, total_seconds_cpu/60, total_seconds_cpu%60)) exit(1);
+  info->time_str = calloc(strlen(buffer_cpu)+1, sizeof(char));
+  strcpy(info->time_str, buffer_cpu);
 
-//     /**
-//      * The size of the storage space currently allocated for the vector,
-//      * expressed in terms of elements.
-//      */
-//     size_t capacity;
-// };
-
+  FILE *fp3 = fopen("/proc/stat","r");
+  if (!fp3) {
+      print_script_file_error();
+      exit(1);
+  }
+  unsigned long btime;
+  while(fgets(line, 100, fp3)) {
+      if(!strncmp(line, "btime", 5)) {
+        it = line + 6;
+        while(isspace(*it)) ++it;
+        btime = strtol(it, NULL, 10);
+      }
+  }
+  fclose(fp3);
+  char buffer_start[100];
+  time_t total_seconds_start = starttime/sysconf(_SC_CLK_TCK) + btime;
+  struct tm *tm_info = localtime(&total_seconds_start);
+  if (!time_struct_to_string(buffer_start, 100, tm_info)) exit(1);
+  info->start_str = calloc(strlen(buffer_start)+1, sizeof(char));
+  strcpy(info->start_str, buffer_start);
+  return info;
+}
 
 char **strsplit(const char* input, const char* d) {
     char *s = strdup(input);
@@ -126,15 +194,18 @@ void clear(int signal){
 }
 
 void extern_comm(char** spl, char* buffer){
+    // background extern
     if(buffer[strlen(buffer) -1] == '&'){
-        char **comm = strsplit(buffer, "&");
-        char **spl_comm = strsplit(comm[0], " ");
+        buffer[strlen(buffer) -2] = 0;
+        char **spl_comm = strsplit(buffer, " ");
+        fflush(stdout);
         int pid = fork();
         signal(SIGCHLD, clear);
         if(pid == -1){
             print_fork_failed();
             fail = 1;
         }else if(pid == 0){
+            //child
             int child = getpid();
             if (setpgid(child, child) == -1) {
                     print_setpgid_failed();
@@ -149,21 +220,27 @@ void extern_comm(char** spl, char* buffer){
             }
             exit(1);
         }else{
-            return;
+            //parent
+            process *pro = process_create(buffer, pid);
+            vector_push_back(process_vector, pro);
             }
     }else{
+        // normal extern 
+        fflush(stdout);
         int pid = fork();
         if(pid == -1){
             print_fork_failed();
             fail = 1;
             return;
         }else if(pid == 0){
+            //child
             int childpid = getpid();
             print_command_executed(childpid);
             execvp(spl[0], &spl[0]);
             print_exec_failed(spl[0]);
             exit(1);
         }else{
+            //parent
             int status;
             waitpid(pid,&status,0);
             if(!(WIFEXITED(status) && WEXITSTATUS(status) == 0)){
@@ -317,6 +394,103 @@ char* load_history(char* file, vector* history){
     }
 }
 
+void command_ps(){
+    print_process_info_header();
+    size_t i = 0;
+    for (; i < vector_size(process_vector); i++) {
+    process *pro = (process *) vector_get(process_vector, i);
+    process_info *prcs_info = info_create(pro->command, pro->pid);
+    print_process_info(prcs_info);
+    }
+    process_info *prcs_info_shell = info_create("./shell", getpid());
+    print_process_info(prcs_info_shell);
+}
+
+void command_pfd(pid_t pid){
+    size_t i = 0;
+    for (; i < vector_size(process_vector); i++) {
+        process *pro = (process *) vector_get(process_vector, i);
+        if (pro->pid == pid) {
+            char path[30];
+            snprintf(path, 30, "/proc/%d/fdinfo", pid);
+            DIR *d = opendir(path);
+            if (!d) {
+                print_script_file_error();
+                return;
+            }
+            print_process_fd_info_header();
+            struct dirent* temp ;
+            char line[50];
+            unsigned long pre;
+            while((temp = readdir(d))){
+                unsigned long fd = strtol(temp->d_name, NULL, 10);
+                if(fd == pre){
+                    continue;
+                }
+                snprintf(line,50,"/proc/%d/fdinfo/%lu",pid, fd);
+                FILE *fp4 = fopen(line,"r");
+                unsigned long file_pos;
+                char line_[100];
+                char *it;
+                while(fgets(line_, 100, fp4)) {
+                    if(!strncmp(line_, "pos:", 4)) {
+                        it = line_ + 4;
+                        while(isspace(*it)) ++it;
+                    file_pos = strtol(it, NULL, 10);
+                    }
+                } 
+                fclose(fp4);
+                char realpath[100];
+                char li[30]; 
+                int limit = 0;
+                snprintf(li, 30, "/proc/%d/fd/%zu", pid, fd);
+                limit = readlink(li, realpath, 100);
+                realpath[limit] = '\0';
+                print_process_fd_info(fd,file_pos, realpath);
+                pre = fd;
+            }
+            return;
+    }
+  }
+    print_no_process_found(pid);
+}
+void command_stop(pid_t pid){
+    size_t i = 0;
+    for (;i < vector_size(process_vector); i++) {
+        process *temp = (process*) vector_get(process_vector, i);
+        if (temp->pid == pid){
+            kill(pid, SIGTSTP);
+            print_stopped_process(pid, temp->command);
+            return;
+        }
+    }
+    print_no_process_found(pid);
+}
+
+void command_kill(pid_t pid){
+    size_t i = 0;
+    for (;i < vector_size(process_vector); i++) {
+        process *temp = (process*) vector_get(process_vector, i);
+        if (temp->pid == pid){
+            kill(pid, SIGTERM);
+            print_killed_process(pid, temp->command);
+            return;
+        }
+    }
+    print_no_process_found(pid);
+}
+
+void command_cont(pid_t pid){
+    size_t i = 0;
+    for (;i < vector_size(process_vector); i++) {
+        process *temp = (process*) vector_get(process_vector, i);
+        if (temp->pid == pid){
+            kill(pid, SIGCONT);
+            return;
+        }
+    }
+    print_no_process_found(pid);
+}
 int shell(int argc, char *argv[]) {
     // TODO: This is the entry point for your shell.
     //bad input
@@ -324,6 +498,7 @@ int shell(int argc, char *argv[]) {
         print_usage();
         exit(1);
     }
+    process_vector = shallow_vector_create();
     char cwd[PATH_MAX+1];
     int pid = getpid();
     vector* history = string_vector_create();
@@ -381,6 +556,50 @@ int shell(int argc, char *argv[]) {
         }
         spl = strsplit(buffer, " ");
         
+        if(!strcmp(buffer,"ps")){
+            command_ps();
+            continue;
+        }
+        if(!strncmp(buffer, "pfd", 3)){
+            pid_t pid;
+            int status = sscanf(buffer+3, "%d",&pid);
+            if(status){
+                command_pfd(pid);
+            }else{
+                print_invalid_command(buffer);
+            }
+            continue;
+        }
+        if(!strncmp(buffer, "stop", 4)){
+            pid_t pid; 
+            int status = sscanf(buffer + 4, "%d", &pid);
+            if(status){
+                command_stop(pid);
+            }else{
+                print_invalid_command(buffer);
+            }
+            continue;
+        }
+        if(!strncmp(buffer, "kill", 4)){
+            pid_t pid; 
+            int status = sscanf(buffer + 4, "%d", &pid);
+            if(status){
+                command_kill(pid);
+            }else{
+                print_invalid_command(buffer);
+            }
+            continue;
+        }
+        if(!strncmp(buffer, "cont", 4)) {
+            pid_t pid; 
+            int status = sscanf(buffer + 4, "%d", &pid);
+            if(status){
+                command_cont(pid);
+            }else{
+                print_invalid_command(buffer);
+            }
+            continue;
+        }
         //&&
         if(strstr(buffer, "&&")){
             logic_and(buffer);
