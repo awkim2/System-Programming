@@ -418,8 +418,6 @@ void command_ps(){
             print_process_info(prcs_info);
         }
     }
-    // process_info *prcs_info_shell = info_create("./shell", getpid());
-    // print_process_info(prcs_info_shell);
 }
 
 void command_pfd(pid_t pid){
@@ -461,6 +459,7 @@ void command_pfd(pid_t pid){
 }
 void command_stop(pid_t pid){
     size_t i = 0;
+    if(kill(pid,0) != -1){
     for (;i < vector_size(process_vector); i++) {
         process *temp = (process*) vector_get(process_vector, i);
         if (temp->pid == pid){
@@ -469,30 +468,35 @@ void command_stop(pid_t pid){
             return;
         }
     }
+    }
     print_no_process_found(pid);
 }
 
-// void command_kill(pid_t pid){
-//     size_t i = 0;
-//     for (;i < vector_size(process_vector); i++) {
-//         process *temp = (process*) vector_get(process_vector, i);
-//         if (temp->pid == pid){
-//             kill(pid, SIGTERM);
-//             print_killed_process(pid, temp->command);
-//             return;
-//         }
-//     }
-//     print_no_process_found(pid);
-// }
+void command_kill(pid_t pid){
+    size_t i = 0;
+    if(kill(pid,0) != -1){
+    for (;i < vector_size(process_vector); i++) {
+        process *temp = (process*) vector_get(process_vector, i);
+        if (temp->pid == pid){
+            kill(pid, SIGTERM);
+            print_killed_process(pid, temp->command);
+            return;
+        }
+    }
+    }
+    print_no_process_found(pid);
+}
 
 void command_cont(pid_t pid){
     size_t i = 0;
+    if(kill(pid,0) != -1){
     for (;i < vector_size(process_vector); i++) {
         process *temp = (process*) vector_get(process_vector, i);
         if (temp->pid == pid){
             kill(pid, SIGCONT);
             return;
         }
+    }
     }
     print_no_process_found(pid);
 }
@@ -568,42 +572,44 @@ int shell(int argc, char *argv[]) {
             continue;
         }
         if(!strncmp(buffer, "pfd", 3)){
-            pid_t pid;
-            int status = sscanf(buffer+3, "%d",&pid);
-            if(status){
-                command_pfd(pid);
-            }else{
+            pid_t pid1;
+            int status1 = sscanf(buffer+3, "%d",&pid1);
+            if(status1 != 1){
                 print_invalid_command(buffer);
+            }else{
+                command_pfd(pid1);
             }
             continue;
         }
         if(!strncmp(buffer, "stop", 4)){
-            pid_t pid; 
-            int status = sscanf(buffer + 4, "%d", &pid);
-            if(status){
-                command_stop(pid);
-            }else{
+            pid_t pid2; 
+            int status2 = sscanf(buffer + 4, "%d", &pid2);
+            if(status2 != 1){
                 print_invalid_command(buffer);
+            }else{
+                command_stop(pid2);
             }
             continue;
         }
-        // if(!strncmp(buffer, "kill", 4)){
-        //     pid_t pid; 
-        //     int status = sscanf(buffer + 4, "%d", &pid);
-        //     if(status){
-        //         command_kill(pid);
-        //     }else{
-        //         print_invalid_command(buffer);
-        //     }
-        //     continue;
-        // }
-        if(!strncmp(buffer, "cont", 4)) {
-            pid_t pid; 
-            int status = sscanf(buffer + 4, "%d", &pid);
-            if(status){
-                command_cont(pid);
-            }else{
+
+        if(!strncmp(buffer, "kill", 4)){
+            pid_t pid4; 
+            int status4 = sscanf(buffer + 4, "%d", &pid4);
+            if(status4 != 1){
                 print_invalid_command(buffer);
+            }else{
+                command_kill(pid4);
+            }
+            continue;
+        }
+
+        if(!strncmp(buffer, "cont", 4)) {
+            pid_t pid3; 
+            int status3 = sscanf(buffer + 4, "%d", &pid3);
+            if(status3 != 1){
+                print_invalid_command(buffer);
+            }else{
+                command_cont(pid3);
             }
             continue;
         }
