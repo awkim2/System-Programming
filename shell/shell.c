@@ -394,16 +394,32 @@ char* load_history(char* file, vector* history){
     }
 }
 
+unsigned long file_getposition(FILE *fd){
+    char line[100];
+    char *it;
+    unsigned long pos;
+    while(fgets(line, 100, fd)) {
+        if(!strncmp(line, "pos:", 4)) {
+                it = line + 4;
+                while(isspace(*it)) ++it;
+                pos = strtol(it, NULL, 10);
+        }
+    } 
+     return pos;
+}
+
 void command_ps(){
     print_process_info_header();
     size_t i = 0;
     for (; i < vector_size(process_vector); i++) {
-    process *pro = (process *) vector_get(process_vector, i);
-    process_info *prcs_info = info_create(pro->command, pro->pid);
-    print_process_info(prcs_info);
+        if(kill(((process *) vector_get(process_vector, i))->pid,0) != -1){
+            process *pro = (process *) vector_get(process_vector, i);
+            process_info *prcs_info = info_create(pro->command, pro->pid);
+            print_process_info(prcs_info);
+        }
     }
-    process_info *prcs_info_shell = info_create("./shell", getpid());
-    print_process_info(prcs_info_shell);
+    // process_info *prcs_info_shell = info_create("./shell", getpid());
+    // print_process_info(prcs_info_shell);
 }
 
 void command_pfd(pid_t pid){
@@ -419,33 +435,24 @@ void command_pfd(pid_t pid){
                 return;
             }
             print_process_fd_info_header();
-            struct dirent* temp ;
+            struct dirent* dir;
             char line[50];
             unsigned long pre;
-            while((temp = readdir(d))){
-                unsigned long fd = strtol(temp->d_name, NULL, 10);
+            while((dir = readdir(d))){
+                unsigned long fd = strtol(dir->d_name, NULL, 10);
                 if(fd == pre){
                     continue;
                 }
                 snprintf(line,50,"/proc/%d/fdinfo/%lu",pid, fd);
                 FILE *fp4 = fopen(line,"r");
-                unsigned long file_pos;
-                char line_[100];
-                char *it;
-                while(fgets(line_, 100, fp4)) {
-                    if(!strncmp(line_, "pos:", 4)) {
-                        it = line_ + 4;
-                        while(isspace(*it)) ++it;
-                    file_pos = strtol(it, NULL, 10);
-                    }
-                } 
+                unsigned long file_pos = file_getposition(fp4);
                 fclose(fp4);
                 char realpath[100];
                 char li[30]; 
-                int limit = 0;
+                int link = 0;
                 snprintf(li, 30, "/proc/%d/fd/%zu", pid, fd);
-                limit = readlink(li, realpath, 100);
-                realpath[limit] = '\0';
+                link = readlink(li, realpath, 100);
+                realpath[link] = '\0';
                 print_process_fd_info(fd,file_pos, realpath);
                 pre = fd;
             }
@@ -467,18 +474,18 @@ void command_stop(pid_t pid){
     print_no_process_found(pid);
 }
 
-void command_kill(pid_t pid){
-    size_t i = 0;
-    for (;i < vector_size(process_vector); i++) {
-        process *temp = (process*) vector_get(process_vector, i);
-        if (temp->pid == pid){
-            kill(pid, SIGTERM);
-            print_killed_process(pid, temp->command);
-            return;
-        }
-    }
-    print_no_process_found(pid);
-}
+// void command_kill(pid_t pid){
+//     size_t i = 0;
+//     for (;i < vector_size(process_vector); i++) {
+//         process *temp = (process*) vector_get(process_vector, i);
+//         if (temp->pid == pid){
+//             kill(pid, SIGTERM);
+//             print_killed_process(pid, temp->command);
+//             return;
+//         }
+//     }
+//     print_no_process_found(pid);
+// }
 
 void command_cont(pid_t pid){
     size_t i = 0;
@@ -498,9 +505,11 @@ int shell(int argc, char *argv[]) {
         print_usage();
         exit(1);
     }
-    process_vector = shallow_vector_create();
-    char cwd[PATH_MAX+1];
     int pid = getpid();
+    process_vector = shallow_vector_create();
+    process* shell = process_create(argv[0], pid);
+    vector_push_back(process_vector, shell);
+    char cwd[PATH_MAX+1];
     vector* history = string_vector_create();
     char* buffer = NULL;
     size_t buffer_size;
@@ -580,16 +589,16 @@ int shell(int argc, char *argv[]) {
             }
             continue;
         }
-        if(!strncmp(buffer, "kill", 4)){
-            pid_t pid; 
-            int status = sscanf(buffer + 4, "%d", &pid);
-            if(status){
-                command_kill(pid);
-            }else{
-                print_invalid_command(buffer);
-            }
-            continue;
-        }
+        // if(!strncmp(buffer, "kill", 4)){
+        //     pid_t pid; 
+        //     int status = sscanf(buffer + 4, "%d", &pid);
+        //     if(status){
+        //         command_kill(pid);
+        //     }else{
+        //         print_invalid_command(buffer);
+        //     }
+        //     continue;
+        // }
         if(!strncmp(buffer, "cont", 4)) {
             pid_t pid; 
             int status = sscanf(buffer + 4, "%d", &pid);
