@@ -405,7 +405,7 @@ unsigned long file_getposition(FILE *fd){
                 pos = strtol(it, NULL, 10);
         }
     } 
-     return pos;
+    return pos;
 }
 
 void command_ps(){
@@ -440,9 +440,7 @@ void command_pfd(pid_t pid){
             unsigned long pre;
             while((dir = readdir(d))){
                 unsigned long fd = strtol(dir->d_name, NULL, 10);
-                if(fd == pre){
-                    continue;
-                }
+                if(fd == pre) continue;
                 snprintf(line,50,"/proc/%d/fdinfo/%lu",pid, fd);
                 FILE *fp4 = fopen(line,"r");
                 unsigned long file_pos = file_getposition(fp4);
