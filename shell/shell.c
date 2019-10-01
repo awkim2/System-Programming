@@ -196,9 +196,10 @@ void clear(int signal){
 void extern_comm(char** spl, char* buffer){
     // background extern
     if(buffer[strlen(buffer) -1] == '&'){
-        buffer[strlen(buffer) -2] = 0;
+        if(buffer[strlen(buffer) -2] == ' '){
+            buffer[strlen(buffer) -2] = 0;
+        }
         char **spl_comm = strsplit(buffer, " ");
-        fflush(stdout);
         int pid = fork();
         signal(SIGCHLD, clear);
         if(pid == -1){
@@ -226,7 +227,6 @@ void extern_comm(char** spl, char* buffer){
             }
     }else{
         // normal extern 
-        fflush(stdout);
         int pid = fork();
         if(pid == -1){
             print_fork_failed();
@@ -357,9 +357,6 @@ int logic_set(char* buffer){
         return 0;
 }
 
-void vv(){
-
-}
 
 vector* read_file(char* file){
     FILE* fd = fopen(get_full_path(file), "r");
@@ -459,45 +456,45 @@ void command_pfd(pid_t pid){
 }
 void command_stop(pid_t pid){
     size_t i = 0;
-    if(kill(pid,0) != -1){
-    for (;i < vector_size(process_vector); i++) {
-        process *temp = (process*) vector_get(process_vector, i);
-        if (temp->pid == pid){
-            kill(pid, SIGTSTP);
-            print_stopped_process(pid, temp->command);
-            return;
+//    if(kill(pid,0) != -1){
+        for (;i < vector_size(process_vector); i++) {
+            process *temp = (process*) vector_get(process_vector, i);
+            if(temp->pid == pid){
+                kill(pid, SIGTSTP);
+                print_stopped_process(pid, temp->command);
+                return;
+            }
         }
-    }
-    }
+    // }
     print_no_process_found(pid);
 }
 
 void command_kill(pid_t pid){
     size_t i = 0;
-    if(kill(pid,0) != -1){
-    for (;i < vector_size(process_vector); i++) {
-        process *temp = (process*) vector_get(process_vector, i);
-        if (temp->pid == pid){
-            kill(pid, SIGTERM);
-            print_killed_process(pid, temp->command);
-            return;
+    // if(kill(pid,0) != -1){
+        for (;i < vector_size(process_vector); i++) {
+            process *temp = (process*) vector_get(process_vector, i);
+            if(temp->pid == pid){
+                kill(pid, SIGTERM);
+                print_killed_process(pid, temp->command);
+                return;
+            }
         }
-    }
-    }
+    // }
     print_no_process_found(pid);
 }
 
 void command_cont(pid_t pid){
     size_t i = 0;
-    if(kill(pid,0) != -1){
-    for (;i < vector_size(process_vector); i++) {
-        process *temp = (process*) vector_get(process_vector, i);
-        if (temp->pid == pid){
-            kill(pid, SIGCONT);
-            return;
+    //if(kill(pid,0) != -1){
+        for (;i < vector_size(process_vector); i++) {
+            process *temp = (process*) vector_get(process_vector, i);
+            if (temp->pid == pid){
+                kill(pid, SIGCONT);
+                return;
+            }
         }
-    }
-    }
+    //}
     print_no_process_found(pid);
 }
 int shell(int argc, char *argv[]) {
@@ -507,6 +504,7 @@ int shell(int argc, char *argv[]) {
         print_usage();
         exit(1);
     }
+    signal(SIGINT, SIG_IGN);
     int pid = getpid();
     process_vector = shallow_vector_create();
     process* shell = process_create(argv[0], pid);
@@ -549,7 +547,7 @@ int shell(int argc, char *argv[]) {
     }
 
     while(1){
-        signal(SIGINT, vv);
+
         if (getcwd(cwd, sizeof(cwd))){
             print_prompt(cwd, pid);
         }
