@@ -7,6 +7,14 @@
 #include <string.h>
 #include <unistd.h>
 
+typedef struct meta_data {
+    size_t size;
+    struct meta_data *next;
+} meta_data;
+
+static meta_data *head = NULL;
+
+
 /**
  * Allocate space for array in memory
  *
@@ -32,7 +40,15 @@
  */
 void *calloc(size_t num, size_t size) {
     // implement calloc!
-    return NULL;
+    void* mem_start = sbrk(0);
+    void* new_mem = sbrk(2 * size * num + sizeof(meta_data));
+    if(*(int*)new_mem == -1) return NULL;
+    meta_data* new_meta = (meta_data*) new_mem - sizeof(meta_data);
+    new_meta->size = size;
+    new_meta->next = NULL;
+    head->next = new_meta;
+    memset(mem_start, 0, 2 * size * num);
+    return new_mem;
 }
 
 /**
@@ -58,7 +74,13 @@ void *calloc(size_t num, size_t size) {
  */
 void *malloc(size_t size) {
     // implement malloc!
-    return NULL;
+    void* new_mem = sbrk(2*size + sizeof(meta_data));
+    if(*(int*)new_mem == -1) return NULL;
+    meta_data* new_meta = (meta_data*) new_mem - sizeof(meta_data);
+    new_meta->size = size;
+    new_meta->next = NULL;
+    head->next = new_meta;
+    return new_mem;
 }
 
 /**
