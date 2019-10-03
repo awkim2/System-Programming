@@ -14,7 +14,7 @@
 # What test cases do you want?
 test_array=(1 2 3 4 5 6 7 8 9 10 11 12 13)
 # What do you want to skip?
-skip_arr=()
+skip_arr=(7 8 9 10 11 12 13)
 
 # Functions 
 usage () { 

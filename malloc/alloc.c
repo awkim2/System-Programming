@@ -7,14 +7,31 @@
 #include <string.h>
 #include <unistd.h>
 
-typedef struct meta_data {
-    size_t size;
-    struct meta_data *next;
-} meta_data;
 
-static meta_data *head = NULL;
+typedef struct memblock {
+    int avi;
+    size_t size_;
+} memblock;
 
 
+static void *memStart;
+static void *lastAddr;
+static int hasInit;
+
+void init()
+{
+    lastAddr = sbrk(0);
+    memStart = lastAddr; 
+    hasInit = 1;
+}
+
+void slice_large_block(memblock* temp, size_t size){
+    memblock* second_part = (void*) temp + size;
+    second_part->size_ = temp->size_ - size;
+    second_part->avi = 1;
+    temp->size_ = size;
+    temp->avi = 0;
+}
 /**
  * Allocate space for array in memory
  *
@@ -39,15 +56,10 @@ static meta_data *head = NULL;
  * @see http://www.cplusplus.com/reference/clibrary/cstdlib/calloc/
  */
 void *calloc(size_t num, size_t size) {
-    // implement calloc!
-    void* mem_start = sbrk(0);
-    void* new_mem = sbrk(2 * size * num + sizeof(meta_data));
-    if(*(int*)new_mem == -1) return NULL;
-    meta_data* new_meta = (meta_data*) new_mem - sizeof(meta_data);
-    new_meta->size = size;
-    new_meta->next = NULL;
-    head->next = new_meta;
-    memset(mem_start, 0, 2 * size * num);
+    void* new_mem = malloc(num*size);
+    if(new_mem){
+        memset(new_mem + sizeof(memblock), 0, num*size);
+    }
     return new_mem;
 }
 
@@ -74,13 +86,35 @@ void *calloc(size_t num, size_t size) {
  */
 void *malloc(size_t size) {
     // implement malloc!
-    void* new_mem = sbrk(2*size + sizeof(meta_data));
-    if(*(int*)new_mem == -1) return NULL;
-    meta_data* new_meta = (meta_data*) new_mem - sizeof(meta_data);
-    new_meta->size = size;
-    new_meta->next = NULL;
-    head->next = new_meta;
-    return new_mem;
+	if (!hasInit) init();
+	void *current = memStart;
+	void *new_mem = NULL; 
+	size += sizeof(memblock); 
+
+	while (current != lastAddr) { 
+		memblock *pcurrent = current; 
+		if (pcurrent->avi && pcurrent->size_ >= size){
+            if(pcurrent->size_ >= (size + 512)){
+                slice_large_block(pcurrent, size);
+            }
+			pcurrent->avi = 0; 
+			new_mem = current;
+			break; 
+		} 
+		current += pcurrent->size_; 
+	}
+    // no enough size block need sbrk
+	if (!new_mem) {
+        if( *(int*) sbrk(size) == -1) return NULL;
+		new_mem = lastAddr; 
+		lastAddr += size; 
+		memblock *pcb = new_mem; 
+		pcb->size_ = size; 
+		pcb->avi = 0; 
+	}
+
+	new_mem += sizeof(memblock); 
+	return new_mem;
 }
 
 /**
@@ -101,6 +135,9 @@ void *malloc(size_t size) {
  */
 void free(void *ptr) {
     // implement free!
+    memblock *pmcb = (memblock *)(ptr - sizeof(memblock));
+    pmcb->avi = 1;
+
 }
 
 /**
@@ -150,5 +187,14 @@ void free(void *ptr) {
  */
 void *realloc(void *ptr, size_t size) {
     // implement realloc!
-    return NULL;
+    if(!ptr) return malloc(size);
+    if(size == 0){
+        free(ptr);
+        return NULL;
+    }
+    void* new_mem = malloc(size);
+    if(!new_mem) return NULL;
+
+
+    return new_mem;
 }
