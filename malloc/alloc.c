@@ -17,6 +17,8 @@ typedef struct memblock {
 }memblock;
 
 static void *heap_begin = NULL;
+static size_t total_memory_used = 0;
+static size_t total_memory_sbrk = 0; 
 
 void get_heap_bottm(){
     if(!heap_begin) heap_begin = sbrk(0);
@@ -32,6 +34,7 @@ void *get_last_block(){
 }
 
 void *find_fit_block(size_t size){
+    if(total_memory_sbrk - total_memory_used >= size){
     memblock *temp;
     temp = heap_begin;
     while(temp){
@@ -39,14 +42,18 @@ void *find_fit_block(size_t size){
         temp = temp->next;
     }
     return temp;
+    }
+    return NULL;
 }
 
 void *sbrk_heap(void *prev, size_t size){
     void *new_mem;
     memblock *new_meta, *prev_meta;
     new_mem = sbrk(size + BLOCK_SIZE);
-    if(new_mem == (void*)-1) return NULL;
+    if(!new_mem) return NULL;
     new_meta = new_mem;
+    total_memory_sbrk += size + BLOCK_SIZE;
+    total_memory_used += size + BLOCK_SIZE;
     new_meta->free = 0;
     new_meta->size = size;
     new_meta->prev = prev;
@@ -64,12 +71,15 @@ void split_block(memblock *blk_meta, size_t size){
         sub_block = blk_meta + size + BLOCK_SIZE;
         sub_block->prev = blk_meta;
         sub_block->next = blk_meta->next;
+        blk_meta->next->prev = sub_block;
         sub_block->size = blk_meta->size - size - BLOCK_SIZE;
         sub_block->free = 1;
 
         blk_meta->size = size;
         blk_meta->free = 0;
         blk_meta->next = sub_block;
+
+        total_memory_used -= sub_block->size;
     }
     else{
         blk_meta->free = 0;
@@ -136,9 +146,9 @@ void *malloc(size_t size) {
     if(!size)
         return NULL;
 
-    if(size & 0x7){
-        size = ((size >> 3) + 1) << 3;
-    }
+    // if(size & 0x7){
+    //     size = ((size >> 3) + 1) << 3;
+    // }
 
     get_heap_bottm();
     cur_brk = sbrk(0);
@@ -159,10 +169,12 @@ void *malloc(size_t size) {
         else{
             last_blk = get_last_block();
             ptr = sbrk_heap(last_blk, size);
-            if(ptr)
+            if(ptr){
                 return ptr;
-            else
+            }
+            else{
                 return NULL;
+            }
         }
     }
 }
@@ -186,12 +198,11 @@ void free(void *ptr) {
     // implement free!
     memblock *curr, *prev_block, *next_block;
 
-    if(!ptr)
-        return ;
+    if(!ptr) return;
 
     curr = ptr - BLOCK_SIZE;
     curr->free = 1;
-
+    total_memory_used -= curr->size;
     next_block = curr->next;
     if(next_block){
         if(next_block->free){
