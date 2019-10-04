@@ -7,31 +7,75 @@
 #include <string.h>
 #include <unistd.h>
 
+#define BLOCK_SIZE sizeof(memblock)
 
 typedef struct memblock {
-    int avi;
-    size_t size_;
-} memblock;
+    int free;
+    size_t size;
+    struct memblock *prev;
+    struct memblock *next;
+}memblock;
 
+static void *heap_begin = NULL;
 
-static void *memStart;
-static void *lastAddr;
-static int hasInit;
-
-void init()
-{
-    lastAddr = sbrk(0);
-    memStart = lastAddr; 
-    hasInit = 1;
+void get_heap_bottm(){
+    if(!heap_begin) heap_begin = sbrk(0);
 }
 
-void slice_large_block(memblock* temp, size_t size){
-    memblock* second_part = (void*) temp + size;
-    second_part->size_ = temp->size_ - size;
-    second_part->avi = 1;
-    temp->size_ = size;
-    temp->avi = 0;
+void *get_last_block(){
+    memblock *temp;
+    temp = heap_begin;
+    while(temp->next){
+        temp = temp->next;
+    }
+    return temp;
 }
+
+void *find_fit_block(size_t size){
+    memblock *temp;
+    temp = heap_begin;
+    while(temp){
+        if(temp->free && temp->size >= size) break;
+        temp = temp->next;
+    }
+    return temp;
+}
+
+void *sbrk_heap(void *prev, size_t size){
+    void *new_mem;
+    memblock *new_meta, *prev_meta;
+    new_mem = sbrk(size + BLOCK_SIZE);
+    if(new_mem == (void*)-1) return NULL;
+    new_meta = new_mem;
+    new_meta->free = 0;
+    new_meta->size = size;
+    new_meta->prev = prev;
+    new_meta->next = NULL;
+    if(prev){
+        prev_meta = prev;
+        prev_meta->next = new_meta;
+    }
+    return new_mem + BLOCK_SIZE;
+}
+
+void split_block(memblock *blk_meta, size_t size){
+    memblock *sub_block;
+    if(size + BLOCK_SIZE < blk_meta->size){
+        sub_block = blk_meta + size + BLOCK_SIZE;
+        sub_block->prev = blk_meta;
+        sub_block->next = blk_meta->next;
+        sub_block->size = blk_meta->size - size - BLOCK_SIZE;
+        sub_block->free = 1;
+
+        blk_meta->size = size;
+        blk_meta->free = 0;
+        blk_meta->next = sub_block;
+    }
+    else{
+        blk_meta->free = 0;
+    }
+}
+
 /**
  * Allocate space for array in memory
  *
@@ -58,7 +102,7 @@ void slice_large_block(memblock* temp, size_t size){
 void *calloc(size_t num, size_t size) {
     void* new_mem = malloc(num*size);
     if(new_mem){
-        memset(new_mem + sizeof(memblock), 0, num*size);
+         memset(new_mem + sizeof(memblock), 0, num*size);
     }
     return new_mem;
 }
@@ -86,37 +130,42 @@ void *calloc(size_t num, size_t size) {
  */
 void *malloc(size_t size) {
     // implement malloc!
-	if (!hasInit) init();
-	void *current = memStart;
-	void *new_mem = NULL; 
-	size += sizeof(memblock); 
+    void *split_blk, *cur_brk, *ptr;
+    memblock *last_blk;
 
-	while (current != lastAddr) { 
-		memblock *pcurrent = current; 
-		if (pcurrent->avi && pcurrent->size_ >= size){
-            if(pcurrent->size_ >= (size + 512)){
-                slice_large_block(pcurrent, size);
-            }
-			pcurrent->avi = 0; 
-			new_mem = current;
-			break; 
-		} 
-		current += pcurrent->size_; 
-	}
-    // no enough size block need sbrk
-	if (!new_mem) {
-        if( *(int*) sbrk(size) == -1) return NULL;
-		new_mem = lastAddr; 
-		lastAddr += size; 
-		memblock *pcb = new_mem; 
-		pcb->size_ = size; 
-		pcb->avi = 0; 
-	}
+    if(!size)
+        return NULL;
 
-	new_mem += sizeof(memblock); 
-	return new_mem;
+    if(size & 0x7){
+        size = ((size >> 3) + 1) << 3;
+    }
+
+    get_heap_bottm();
+    cur_brk = sbrk(0);
+    if(heap_begin == cur_brk){
+        ptr = sbrk_heap(NULL, size);
+        if(ptr)
+            return ptr;
+        else
+            return NULL;
+    }
+    else{
+        split_blk = find_fit_block(size);
+        if(split_blk){
+            split_block(split_blk, size);
+            ptr = split_blk + BLOCK_SIZE;
+            return ptr;
+        }
+        else{
+            last_blk = get_last_block();
+            ptr = sbrk_heap(last_blk, size);
+            if(ptr)
+                return ptr;
+            else
+                return NULL;
+        }
+    }
 }
-
 /**
  * Deallocate space in memory
  *
@@ -135,8 +184,29 @@ void *malloc(size_t size) {
  */
 void free(void *ptr) {
     // implement free!
-    memblock *pmcb = (memblock *)(ptr - sizeof(memblock));
-    pmcb->avi = 1;
+    memblock *curr, *prev_block, *next_block;
+
+    if(!ptr)
+        return ;
+
+    curr = ptr - BLOCK_SIZE;
+    curr->free = 1;
+
+    next_block = curr->next;
+    if(next_block){
+        if(next_block->free){
+            curr->next = next_block->next;
+            curr->size += next_block->size + BLOCK_SIZE;
+        }
+    }
+
+    prev_block = curr->prev;
+    if(prev_block){
+        if(prev_block->free){
+            prev_block->next = curr->next;
+            prev_block->size += curr->size + BLOCK_SIZE;
+        }
+    }
 
 }
 
@@ -187,14 +257,15 @@ void free(void *ptr) {
  */
 void *realloc(void *ptr, size_t size) {
     // implement realloc!
-    if(!ptr) return malloc(size);
-    if(size == 0){
-        free(ptr);
-        return NULL;
-    }
-    void* new_mem = malloc(size);
-    if(!new_mem) return NULL;
+    // if(!ptr) return malloc(size);
+    // if(size == 0){
+    //     free(ptr);
+    //     return NULL;
+    // }
+    // void* new_mem = malloc(size);
+    // if(!new_mem) return NULL;
 
 
-    return new_mem;
+    // return new_mem;
+    return NULL;
 }
