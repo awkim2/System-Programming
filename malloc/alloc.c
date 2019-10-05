@@ -160,13 +160,23 @@ void *malloc(size_t size) {
             return NULL;
     }
     else{
-        split_blk = find_fit_block(size);
-        if(split_blk){
-            split_block(split_blk, size);
-            ptr = split_blk + BLOCK_SIZE;
-            return ptr;
-        }
-        else{
+        if(total_memory_sbrk - total_memory_used >= size){
+            split_blk = find_fit_block(size);
+            if(split_blk){
+                split_block(split_blk, size);
+                ptr = split_blk + BLOCK_SIZE;
+                return ptr;
+            }else{
+                last_blk = get_last_block();
+                ptr = sbrk_heap(last_blk, size);
+                if(ptr){
+                    return ptr;
+                }
+                else{
+                    return NULL;
+                }
+            }
+        }else{
             last_blk = get_last_block();
             ptr = sbrk_heap(last_blk, size);
             if(ptr){
@@ -268,15 +278,13 @@ void free(void *ptr) {
  */
 void *realloc(void *ptr, size_t size) {
     // implement realloc!
-    // if(!ptr) return malloc(size);
-    // if(size == 0){
-    //     free(ptr);
-    //     return NULL;
-    // }
-    // void* new_mem = malloc(size);
-    // if(!new_mem) return NULL;
+    if(!ptr) return malloc(size);
+    if(size == 0){
+        free(ptr);
+        return NULL;
+    }
+    void* new_mem = malloc(size);
+    if(!new_mem) return NULL;
 
-
-    // return new_mem;
-    return NULL;
+    return new_mem;
 }

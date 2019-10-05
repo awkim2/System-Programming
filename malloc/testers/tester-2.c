@@ -4,7 +4,7 @@
  */
 #include "tester-utils.h"
 
-#define TOTAL_ALLOCS 5 * M
+#define TOTAL_ALLOCS 1000
 
 int main() {
     malloc(1);
@@ -26,6 +26,7 @@ int main() {
         *(arr[i]) = i;
     }
 
+    return 0;
     for (i = 0; i < TOTAL_ALLOCS; i++) {
         if (*(arr[i]) != i) {
             fprintf(stderr, "Memory failed to contain correct data after many "
