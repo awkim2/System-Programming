@@ -17,7 +17,7 @@ typedef struct memblock {
 }memblock;
 
 static void *heap_begin = NULL;
-static size_t total_memory_used = 0;
+static size_t memory_avi = 0;
 static size_t total_memory_sbrk = 0; 
 
 void get_heap_bottm(){
@@ -34,7 +34,6 @@ void *get_last_block(){
 }
 
 void *find_fit_block(size_t size){
-    if(total_memory_sbrk - total_memory_used >= size){
     memblock *temp;
     temp = heap_begin;
     while(temp){
@@ -42,8 +41,6 @@ void *find_fit_block(size_t size){
         temp = temp->next;
     }
     return temp;
-    }
-    return NULL;
 }
 
 void *sbrk_heap(void *prev, size_t size){
@@ -53,7 +50,6 @@ void *sbrk_heap(void *prev, size_t size){
     if(!new_mem) return NULL;
     new_meta = new_mem;
     total_memory_sbrk += size + BLOCK_SIZE;
-    total_memory_used += size + BLOCK_SIZE;
     new_meta->free = 0;
     new_meta->size = size;
     new_meta->prev = prev;
@@ -79,7 +75,6 @@ void split_block(memblock *blk_meta, size_t size){
         blk_meta->free = 0;
         blk_meta->next = sub_block;
 
-        total_memory_used -= sub_block->size;
     }
     else{
         blk_meta->free = 0;
@@ -160,22 +155,11 @@ void *malloc(size_t size) {
             return NULL;
     }
     else{
-        if(total_memory_sbrk - total_memory_used >= size){
+        if(memory_avi >= size){
             split_blk = find_fit_block(size);
-            if(split_blk){
                 split_block(split_blk, size);
                 ptr = split_blk + BLOCK_SIZE;
                 return ptr;
-            }else{
-                last_blk = get_last_block();
-                ptr = sbrk_heap(last_blk, size);
-                if(ptr){
-                    return ptr;
-                }
-                else{
-                    return NULL;
-                }
-            }
         }else{
             last_blk = get_last_block();
             ptr = sbrk_heap(last_blk, size);
@@ -212,7 +196,7 @@ void free(void *ptr) {
 
     curr = ptr - BLOCK_SIZE;
     curr->free = 1;
-    total_memory_used -= curr->size;
+    memory_avi += (curr->size + BLOCK_SIZE);
     next_block = curr->next;
     if(next_block){
         if(next_block->free){
