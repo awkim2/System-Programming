@@ -4,7 +4,7 @@
  */
 #include "tester-utils.h"
 
-#define TOTAL_ALLOCS 1000
+#define TOTAL_ALLOCS 5 * M
 
 int main() {
     malloc(1);
