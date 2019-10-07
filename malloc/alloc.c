@@ -16,12 +16,9 @@ typedef struct meta_block{
 }meta_block;
 
 static size_t mem_free = 0;
-static size_t mem_in_use = 0;
 static meta_block *head = NULL;
 
 #define BLOCK_SIZE  sizeof(meta_block) 
-
-
 void merge(meta_block* temp){
     temp->size += temp->prev->size + BLOCK_SIZE;
     temp->prev = temp->prev->prev;
@@ -36,6 +33,7 @@ void split_space(meta_block* temp, size_t size){
     meta_block* new_space = temp->ptr + size;
     new_space->ptr = new_space + 1;
     new_space->size = temp->size - size - BLOCK_SIZE;
+    mem_free += new_space->size;
     new_space->free = 1;
     temp->size = size;
     new_space->next = temp;
@@ -46,9 +44,7 @@ void split_space(meta_block* temp, size_t size){
         head = new_space;
     }
     temp->prev = new_space;
-    if(new_space->prev && new_space->prev->free){
-        merge(new_space);
-    }
+    if(new_space->prev && new_space->prev->free) merge(new_space);
 }
 
 
@@ -67,6 +63,7 @@ void *malloc(size_t size) {
     if(mem_free >= size){
         while(curr){
             if(curr->free && curr->size >= size){
+                mem_free -= size;
                 res = curr;
                 if((res->size - size >= size) && (res->size - size >= BLOCK_SIZE)) split_space(res,size);
                 break;
@@ -95,7 +92,6 @@ void *malloc(size_t size) {
     head = res;
     res->size = size;
     res->free = 0;
-    mem_in_use += (size + BLOCK_SIZE);
     return res->ptr;
 }
 
@@ -105,7 +101,6 @@ void free(void *ptr) {
     if(temp->free) return;
     temp->free = 1;
     mem_free += (temp->size + BLOCK_SIZE);
-    mem_in_use -= (temp->size + BLOCK_SIZE);
 
     if(temp->prev && temp->prev->free == 1) merge(temp);
     if(temp->next && temp->next->free == 1) merge(temp->next);
