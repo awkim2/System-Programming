@@ -16,9 +16,12 @@ typedef struct meta_block{
 }meta_block;
 
 static size_t mem_free = 0;
+
+//last block at top of heap. head->prev is NULL.
 static meta_block *head = NULL;
 
 #define BLOCK_SIZE  sizeof(meta_block) 
+
 void merge(meta_block* temp){
     temp->size += temp->prev->size + BLOCK_SIZE;
     temp->prev = temp->prev->prev;
@@ -29,7 +32,7 @@ void merge(meta_block* temp){
     }
 }
 
-void split_space(meta_block* temp, size_t size){
+void split(meta_block* temp, size_t size){
     meta_block* new_space = temp->ptr + size;
     new_space->ptr = new_space + 1;
     new_space->size = temp->size - size - BLOCK_SIZE;
@@ -65,7 +68,8 @@ void *malloc(size_t size) {
             if(curr->free && curr->size >= size){
                 mem_free -= size;
                 res = curr;
-                if((res->size - size >= size) && (res->size - size >= BLOCK_SIZE)) split_space(res,size);
+                if((res->size - size >= size) && (res->size - size >= BLOCK_SIZE)) split(res,size);
+                //if(res->size >= 2*size && res->size - size >= 1024) split(res,size);
                 break;
             }
             curr = curr->next;
@@ -82,13 +86,8 @@ void *malloc(size_t size) {
     if(sbrk(BLOCK_SIZE + size) == (void*) -1) return NULL;
     res->ptr = res + 1;
     res->next = head;
-    if(head){
-        res->prev = head->prev;
-        head->prev = res;
-    }else{
-        //first malloc
-        res->prev = NULL;
-    }
+    res->prev = NULL;
+    if(head) head->prev = res;
     head = res;
     res->size = size;
     res->free = 0;
@@ -110,14 +109,14 @@ void *realloc(void *ptr, size_t size) {
     // implement realloc!
     if(!ptr) return malloc(size);
     meta_block* temp = ptr - BLOCK_SIZE;
-    assert(temp->ptr == ptr);
  
     if(size == temp->size) return ptr;
 
     if(size > temp->size){
+        //realloc larger
         if(temp->prev && temp->prev->free && temp->size + temp->prev->size +sizeof(malloc) >= size){
             merge(temp);
-            split_space(temp,size);
+            split(temp,size);
             return temp->ptr;
         }else{
             void* new_temp = malloc(size);
@@ -126,8 +125,9 @@ void *realloc(void *ptr, size_t size) {
             return new_temp;
         }
     }else{
+        //realloc smaller
         if(temp->size - size >= BLOCK_SIZE){
-            split_space(temp,size);
+            split(temp,size);
             return temp->ptr;
         }else{
             void* new_temp = malloc(size);
