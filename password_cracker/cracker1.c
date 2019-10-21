@@ -1,5 +1,5 @@
 /**
- * Password Cracker
+ * known Cracker
  * CS 241 - Fall 2019
  */
 #include "cracker1.h"
@@ -7,125 +7,97 @@
 #include "utils.h"
 #include "./includes/queue.h"
 #include <stdio.h>
+#include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <crypt.h>
-#include <stdlib.h>
-#include <math.h>
 
-typedef struct task {
-  char* name;
-  char* hash;
-  char* known;
-} task;
-queue* q = NULL;
+static queue* q;
 static int solve = 0;
-static int fail= 0;
-pthread_mutex_t m1 = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t m2 = PTHREAD_MUTEX_INITIALIZER;
+static int fail = 0;
+static int count = 0;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
-
-void* cryptFuct(void* id){
-    struct crypt_data cdata;
-    cdata.initialized = 0;
+void* crypt_func(void* id){
     int tid = (long) id;
-    task *temp = NULL;
-    //loop through all names in queue
-    while((temp = queue_pull(q))){
-        queue_push(q,NULL);
-        int count = 0;
-        int found = 0;
-        v1_print_thread_start(tid, temp->name);
-        double start = getThreadCPUTime();
-        char *key = calloc(9,1);
-        strcpy(key, temp->known);
-        int remainlen = 8 - getPrefixLength(key);
-        setStringPosition(key + getPrefixLength(key), 0);
-        //loop through all possible password for one name
-        while (1) {
-            char* password = crypt_r(key, "xx", &cdata);
-            count++;
-            //found match hash 
-            if (!strcmp(password, temp->hash)) {
-                double time = getThreadCPUTime() - start;
-                v1_print_thread_result(tid, temp->name, key, count, time, 0);
-                found = 1;
-                pthread_mutex_lock(&m1);
+    char name[16], hash[16], known[16];
+    pthread_mutex_lock(&m);
+    while(count != 0){
+        char* temp = queue_pull(q);
+        count --;
+        struct crypt_data cdata;
+        cdata.initialized = 0;
+        pthread_mutex_unlock(&m);
+        sscanf(temp, "%s %s %s", name, hash, known);
+        //start one thread 
+        v1_print_thread_start(tid, name);
+        double time_cpu = getThreadCPUTime();
+        //set the  starting point
+        char* password = known + getPrefixLength(known);
+        setStringPosition(password, 0);
+        int hash_count = 0;
+        char* hash_v = NULL;
+        int not_success = 1;
+        while(1){
+            hash_v = crypt_r(known, "xx", &cdata);
+            hash_count++;
+            //if found the solution 
+            if(!strcmp(hash, hash_v)){
+                pthread_mutex_lock(&m);
                 solve++;
-                pthread_mutex_unlock(&m1);
+                not_success = 0;
+                pthread_mutex_unlock(&m);     
                 break;
             }
-            incrementString(key);
-            //try all possible hash
-            if(count == pow(26,remainlen)) break;
+            //not found the solution
+            if(!incrementString(password)){
+                pthread_mutex_lock(&m);
+                fail++;
+                pthread_mutex_unlock(&m);
+                break;
+            }
         }
-        // failed finding solution, try next one
-        if (!found){
-            double timeusing = getThreadCPUTime() - start;
-            v1_print_thread_result(tid, temp->name, NULL, count, timeusing, 1);
-            pthread_mutex_lock(&m2);
-            fail++;
-            pthread_mutex_unlock(&m2);
-            free(key);
-            free(temp->name);
-            free(temp->hash);
-            free(temp->known);
-            free(temp);
-            continue;
-        }
-        // success finding solution, try next one
-            free(key);
-            free(temp->name);
-            free(temp->hash);
-            free(temp->known);
-            free(temp);
-        }
-            return NULL;
-
+        pthread_mutex_lock(&m);
+        //print result
+        v1_print_thread_result(tid,name,known,hash_count,getThreadCPUTime()-time_cpu,not_success);
+        free(temp);
+    }
+    pthread_mutex_unlock(&m);
+    return NULL;
 }
 
 int start(size_t thread_count) {
     // TODO your code here, make sure to use thread_count!
-    // Remember to ONLY crack passwords in other threads
-    q = queue_create(-1);
+    // Remember to ONLY crack knowns in other threads
+    pthread_t tid[thread_count];
+    q = queue_create(1000);
     char* buffer = NULL;
     size_t len = 0;
-    ssize_t nread;
-    //push all lines in queue
+    int nread = 0;
+    //push all lines to queue
     while(1){
-        nread = getline(&buffer, &len, stdin);
-        if(nread <= 0) break;
-        if(nread>0 && buffer[nread -1] == '\n') buffer[nread-1] = '\0';
-        task* new_task = malloc(sizeof(task));
-        char* name = strtok(buffer, " ");
-        char* hash = strtok(NULL, " ");
-        char* known = strtok(NULL, " ");
-        new_task->name = calloc(strlen(name)+1, 1);
-        new_task->hash = calloc(strlen(hash)+1, 1);
-        new_task->known = calloc(strlen(known)+1, 1);
-        strcpy(new_task->name, name);
-        strcpy(new_task->hash, hash);
-        strcpy(new_task->known, known);
-        queue_push(q, new_task);
+        nread = getline(&buffer,&len, stdin);
+        if(nread == -1) break;
+        if(buffer[strlen(buffer) -1] =='\n') buffer[strlen(buffer) -1] = '\0';
+        char* temp = strdup(buffer);
+        queue_push(q, temp);
+        count++;
     }
     free(buffer);
     buffer = NULL;
-    pthread_t thread_num[thread_count];
-    size_t i = 0;
-    size_t j = 0;
-    for(; i < thread_count; i++){
-        pthread_create(thread_num + i, NULL, cryptFuct, (void*)i+1);
-        //finish create thread, and join all threads
-        if(i == thread_count - 1){
-            for(; j < thread_count; j++){
-                pthread_join(thread_num[j], NULL);
-            }
-        }
+    size_t i = 0; 
+    // create threads
+    for(;i < thread_count; i++){
+        pthread_create(&tid[i],NULL, crypt_func, (void*)i+1);
     }
+    // join threads
+    for(i = 0; i < thread_count; i++){
+        pthread_join(tid[i], NULL);
+    }
+    v1_print_summary(solve,fail);
+    pthread_mutex_destroy(&m);
     queue_destroy(q);
-    pthread_mutex_destroy(&m1);
-    pthread_mutex_destroy(&m2);  
-    v1_print_summary(solve, fail); 
     return 0; // DO NOT change the return code since AG uses it to check if your
               // program exited normally
 }
