@@ -3,91 +3,178 @@
  * CS 241 - Fall 2019
  */
  
-#include "./includes/vector.h"
-#include "./includes/graph.h"
-#include "./includes/set.h"
-#include "./includes/queue.h"
-#include "./includes/compare.h"
 #include "format.h"
+#include "graph.h"
 #include "parmake.h"
 #include "parser.h"
+#include "set.h"
+#include "queue.h"
+#include "dictionary.h"
 #include <stdio.h>
-#include <pthread.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-queue *q = NULL; 
-graph* g = NULL;
-set* visited_set = NULL;
-int fail = 0;
+#include <time.h>
+#include <pthread.h>
 
-int isCyclic(char* target) {
-    if (!visited_set) visited_set = shallow_set_create();
-    if (set_contains(visited_set, target)) {
-        set_destroy(visited_set);
-        visited_set = NULL;
+graph *g = NULL;
+queue *q = NULL;
+dictionary *d = NULL;
+
+pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+
+int zero = 0;
+int one = 1;
+size_t finished = 0;
+
+//VECTOR_FOR_EACH
+//Vector iteration macro. `vecname` is the name of the vector. `varname` is the
+//name of a temporary (local) variable to refer to each element in the vector,
+//and `callback` is a block of code that gets executed once for each element in
+//the vector until `break;` is called
+
+int is_Cyclic(void* temp){
+    if(!dictionary_contains(d, temp)) return 0;
+    if(*(int *)dictionary_get(d, temp) == 1) return 1;
+    dictionary_set(d, temp, &one);
+    vector* dependencies = graph_neighbors(g, temp);
+    VECTOR_FOR_EACH(dependencies, vt, {
+        if (*(int*)dictionary_get(d, vt) == 0) {
+            int r = is_Cyclic(vt);
+            vector_destroy(dependencies);
+            return r;
+        }
+        vector_destroy(dependencies);
         return 1;
-    }else{
-      set_add(visited_set, target);
-      vector *neighbor_vec = graph_neighbors(g, target);
-      for (size_t i = 0; i < vector_size(neighbor_vec); i++) {
-        if (isCyclic(vector_get(neighbor_vec, i))) {
-          vector_destroy(neighbor_vec);
-          return 1;
-        }
-      }
-      vector_destroy(neighbor_vec);
-    }
-    set_destroy(visited_set);
-    visited_set = NULL;
+    });
+    vector_destroy(dependencies);
     return 0;
 }
-int is_fail(char* target){
-    int flag = 0;
-    if(access(target, F_OK) == -1) flag = 1;
-    vector* neighbor_vec = graph_neighbors(g,target);
-    for(size_t i = 0 ; i < vector_size(neighbor_vec);i++){
-        char* neighbor = vector_get(neighbor_vec, i);
-        if(access(neighbor, F_OK) == -1){
-            flag = 1;
-        }else{
-            struct stat oldtime;
-            stat(target, &oldtime);
-            struct stat newtime;
-            stat(neighbor, &newtime);
-            if (difftime(oldtime.st_mtime, newtime.st_mtime) < 0) flag = 0;
+
+
+void push_to_queue(char *target) {
+    if (*(int*)dictionary_get(d, target) == 1) return;
+    dictionary_set(d, target, &one);
+    vector* dependencies = graph_neighbors(g, target);
+    //push for each item in dependencies
+    VECTOR_FOR_EACH(dependencies, vt, {push_to_queue(vt);});
+    if (vector_empty(dependencies)) queue_push(q, target);
+    rule_t *rule = (rule_t *)graph_get_vertex_value(g, target);
+    rule->state = vector_size(dependencies);
+    vector_destroy(dependencies);
+}
+
+
+void *run_commands(void *ptr) {
+    while (1) {
+        char *target = (char *)queue_pull(q);
+        if (!target) break;
+        rule_t *rule = (rule_t *) graph_get_vertex_value(g, target);
+        struct stat stat_info;
+        int flag = 0;
+        int result = stat(rule->target, &stat_info);
+        if (result == -1) flag = 1;
+        if (flag == 0) {
+            pthread_mutex_lock(&m);
+            vector *dependencies = graph_neighbors(g, target);
+            pthread_mutex_unlock(&m);
+            VECTOR_FOR_EACH(dependencies, vt, {
+                rule_t *temp_rule = (rule_t*)graph_get_vertex_value(g, vt);
+                struct stat tempstat;
+                if (stat(temp_rule->target, &tempstat) == -1 || tempstat.st_mtime > stat_info.st_mtime) {
+                    flag = 1;
+                    break;
+                }
+            });
+            vector_destroy(dependencies);
         }
-        is_fail(neighbor);   
-    }
-    vector_destroy(neighbor_vec);
-    rule_t *rule = (rule_t*) graph_get_vertex_value(g, target);
-    if(flag && !rule->state && !fail){
-        queue_push(q, rule);
-        rule_t *rule = queue_pull(q);
-        for (size_t i = 0; i < vector_size(rule->commands); i++) {
-            if (system(vector_get(rule->commands, i)) != 0) {
-                fail = 1;
-                break;
+        int done = 1;
+        if (flag) {
+            VECTOR_FOR_EACH(rule->commands, vt, {
+                if (system(vt) != 0) {
+                    done = 0;
+                    break;
+                }
+            });
+        }
+        //m lock
+        pthread_mutex_lock(&m);
+        vector *par = graph_antineighbors(g, target);
+        VECTOR_FOR_EACH(par, vt, {
+            if (done) {
+                rule_t *r = graph_get_vertex_value(g, vt);
+                r->state -= 1;
+                if (r->state == 0) queue_push(q, vt);
             }
-        }   
-        rule->state = 1;
+            if (!strcmp(vt, "")) {
+                finished++;
+                pthread_cond_signal(&cv);
+            }
+        });
+        pthread_mutex_unlock(&m);
+        //m unlock
+        vector_destroy(par);
     }
-    return 0;
+    return NULL;
 }
+
+void zero_out() {
+    vector* Vert = graph_vertices(g);
+    VECTOR_FOR_EACH(Vert, vt, {dictionary_set(d, vt, &zero);});
+    vector_destroy(Vert);
+}
+
 
 int parmake(char *makefile, size_t num_threads, char **targets) {
     // good luck!
-    q = queue_create(-1);
     g = parser_parse_makefile(makefile, targets);
-    vector *goal_vec = graph_neighbors(g, "");
-    for(size_t i = 0; i < vector_size(goal_vec); i++){
-        char* goal =  vector_get(goal_vec, i);
-        if(isCyclic(goal)) print_cycle_failure(goal);
-        else {is_fail(goal);}
+    q = queue_create(-1);
+    d = string_to_int_dictionary_create();
+    zero_out();
+    pthread_t pids[num_threads];
+    vector *goal_v = graph_neighbors(g, "");
+    size_t i = 0;
+    for (;i < vector_size(goal_v); i++) {
+        char *goal = vector_get(goal_v, i);
+        if (is_Cyclic(goal)) {
+            print_cycle_failure(goal);
+            rule_t *rule = (rule_t*) graph_get_vertex_value(g, goal);
+            rule->state = -1;
+            vector_erase(goal_v, i);
+        }
     }
-    queue_push(q,NULL);
-    vector_destroy(goal_vec);
+    rule_t *root = graph_get_vertex_value(g, "");
+    root->state = vector_size(goal_v);
+    if (vector_empty(goal_v)) return 0;
+    zero_out();
+    VECTOR_FOR_EACH(goal_v, vt, {push_to_queue(vt);});
+    zero_out();
+    for (size_t i = 0; i < num_threads; i++) {
+        pthread_create(pids + i, NULL, run_commands, NULL);
+    }
+    //lock m
+    pthread_mutex_lock(&m);
+    while (finished != vector_size(goal_v)) {
+        pthread_cond_wait(&cv, &m);
+    }
+    pthread_mutex_unlock(&m);
+    //unlock m
+    for (size_t i = 0; i < num_threads + 1; i++) {
+        queue_push(q, NULL);
+    }
+    //pjoin
+    for (size_t i = 0; i < num_threads; i++) {
+        pthread_join(pids[i], NULL);
+    }
+    //done
+    vector_destroy(goal_v);
     graph_destroy(g);
     queue_destroy(q);
+    dictionary_destroy(d);
+    pthread_cond_destroy(&cv);
+    pthread_mutex_destroy(&m);
     return 0;
 }
