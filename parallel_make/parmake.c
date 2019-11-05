@@ -26,9 +26,7 @@ dictionary *d = NULL;
 pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
-int zero = 0;
-int one = 1;
-size_t finished = 0;
+size_t thread_cout = 0;
 
 //VECTOR_FOR_EACH
 //Vector iteration macro. `vecname` is the name of the vector. `varname` is the
@@ -39,7 +37,7 @@ size_t finished = 0;
 int is_Cyclic(void* temp){
     if(!dictionary_contains(d, temp)) return 0;
     if(*(int *)dictionary_get(d, temp) == 1) return 1;
-    dictionary_set(d, temp, &one);
+    dictionary_set(d, temp, (void*) 1);
     vector* dependencies = graph_neighbors(g, temp);
     VECTOR_FOR_EACH(dependencies, vt, {
         if (*(int*)dictionary_get(d, vt) == 0) {
@@ -55,12 +53,12 @@ int is_Cyclic(void* temp){
 }
 
 
-void push_to_queue(char *target) {
+void push_vec(char *target) {
     if (*(int*)dictionary_get(d, target) == 1) return;
-    dictionary_set(d, target, &one);
+    dictionary_set(d, target, (void*) 1);
     vector* dependencies = graph_neighbors(g, target);
     //push for each item in dependencies
-    VECTOR_FOR_EACH(dependencies, vt, {push_to_queue(vt);});
+    VECTOR_FOR_EACH(dependencies, vt, {push_vec(vt);});
     if (vector_empty(dependencies)) queue_push(q, target);
     rule_t *rule = (rule_t *)graph_get_vertex_value(g, target);
     rule->state = vector_size(dependencies);
@@ -70,13 +68,14 @@ void push_to_queue(char *target) {
 
 void *run_commands(void *ptr) {
     while (1) {
-        char *target = (char *)queue_pull(q);
+        char *target = (char*) queue_pull(q);
         if (!target) break;
         rule_t *rule = (rule_t *) graph_get_vertex_value(g, target);
         struct stat stat_info;
         int flag = 0;
         int result = stat(rule->target, &stat_info);
         if (result == -1) flag = 1;
+        //get time
         if (flag == 0) {
             pthread_mutex_lock(&m);
             vector *dependencies = graph_neighbors(g, target);
@@ -84,6 +83,7 @@ void *run_commands(void *ptr) {
             VECTOR_FOR_EACH(dependencies, vt, {
                 rule_t *temp_rule = (rule_t*)graph_get_vertex_value(g, vt);
                 struct stat tempstat;
+                //compare time
                 if (stat(temp_rule->target, &tempstat) == -1 || tempstat.st_mtime > stat_info.st_mtime) {
                     flag = 1;
                     break;
@@ -110,7 +110,7 @@ void *run_commands(void *ptr) {
                 if (r->state == 0) queue_push(q, vt);
             }
             if (!strcmp(vt, "")) {
-                finished++;
+                thread_cout++;
                 pthread_cond_signal(&cv);
             }
         });
@@ -121,19 +121,14 @@ void *run_commands(void *ptr) {
     return NULL;
 }
 
-void zero_out() {
-    vector* Vert = graph_vertices(g);
-    VECTOR_FOR_EACH(Vert, vt, {dictionary_set(d, vt, &zero);});
-    vector_destroy(Vert);
-}
-
-
 int parmake(char *makefile, size_t num_threads, char **targets) {
     // good luck!
     g = parser_parse_makefile(makefile, targets);
     q = queue_create(-1);
     d = string_to_int_dictionary_create();
-    zero_out();
+    vector* Vert = graph_vertices(g);
+    VECTOR_FOR_EACH(Vert, vt, {dictionary_set(d, vt, (void*) 0);});
+    vector_destroy(Vert);
     pthread_t pids[num_threads];
     vector *goal_v = graph_neighbors(g, "");
     size_t i = 0;
@@ -149,15 +144,19 @@ int parmake(char *makefile, size_t num_threads, char **targets) {
     rule_t *root = graph_get_vertex_value(g, "");
     root->state = vector_size(goal_v);
     if (vector_empty(goal_v)) return 0;
-    zero_out();
-    VECTOR_FOR_EACH(goal_v, vt, {push_to_queue(vt);});
-    zero_out();
+    Vert = graph_vertices(g);
+    VECTOR_FOR_EACH(Vert, vt, {dictionary_set(d, vt, (void*) 0);});
+    vector_destroy(Vert);
+    VECTOR_FOR_EACH(goal_v, vt, {push_vec(vt);});
+    Vert = graph_vertices(g);
+    VECTOR_FOR_EACH(Vert, vt, {dictionary_set(d, vt, (void*) 0);});
+    vector_destroy(Vert);
     for (size_t i = 0; i < num_threads; i++) {
         pthread_create(pids + i, NULL, run_commands, NULL);
     }
     //lock m
     pthread_mutex_lock(&m);
-    while (finished != vector_size(goal_v)) {
+    while (thread_cout != vector_size(goal_v)) {
         pthread_cond_wait(&cv, &m);
     }
     pthread_mutex_unlock(&m);
