@@ -1,6 +1,7 @@
 /**
  * mapreduce Lab
  * CS 241 - Spring 2019
+ * partner with guanhua2
  */
 
 #include "utils.h"
