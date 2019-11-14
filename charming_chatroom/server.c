@@ -35,6 +35,14 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void close_server() {
     endSession = 1;
     // add any additional flags here you want.
+    for(int i = 0; i < MAX_CLIENTS; i++){
+      if(clients[i] != -1){
+        if(shutdown(clients[i], SHUT_RDWR) != 0) perror("shutdown\n");
+        if(close(clients[i]) != 0) perror("close\n");
+      }
+    }
+    if(shutdown(serverSocket, SHUT_RDWR) != 0) perror("shutdown\n");
+    if(close(serverSocket) != 0) perror("close\n");
 }
 
 /**
@@ -75,19 +83,78 @@ void cleanup() {
  *    - perror() for any other call
  */
 void run_server(char *port) {
-    /*QUESTION 1*/
-    /*QUESTION 2*/
-    /*QUESTION 3*/
+    serverSocket =  socket(AF_INET, SOCK_STREAM, 0);
+    int adinfo;
+    //set temp
+    struct addrinfo temp;
+    memset(&temp, 0, sizeof(struct addrinfo));
+    temp.ai_family = AF_INET;
+    temp.ai_flags = AI_PASSIVE;
+    temp.ai_socktype = SOCK_STREAM;
+    
+    struct addrinfo *res;
+    // get res
+    adinfo = getaddrinfo(NULL, port, &temp, &res);
+    if(adinfo){
+      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(adinfo));
+      exit(1);
+    }
 
-    /*QUESTION 8*/
+    int one = 1;
+    //set check
+    adinfo = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
+    if(adinfo == -1) {
+        perror("setsockopt");
+        exit(1);
+    }
+    //bind check
+    adinfo = bind(serverSocket, res->ai_addr, res->ai_addrlen);
+    if(adinfo){
+      perror("bind\n");
+      exit(1);
+    }
+    //listen check
+    adinfo = listen(serverSocket, MAX_CLIENTS);
+    if(adinfo){
+      perror("listen");
+      exit(1);
+    }
 
-    /*QUESTION 4*/
-    /*QUESTION 5*/
-    /*QUESTION 6*/
+    for(int i = 0; i < MAX_CLIENTS; i++){
+      clients[i] = -1;
+    }
 
-    /*QUESTION 9*/
-
-    /*QUESTION 10*/
+    pthread_t thread_t[MAX_CLIENTS];
+    //while not endSession
+    while(!endSession){
+      if(clientsCount > MAX_CLIENTS) continue;
+      struct sockaddr ad;
+      socklen_t a_len = sizeof(struct sockaddr);
+      memset(&ad, 0, a_len);
+      int fd_c = accept(serverSocket, &ad, &a_len);
+      if(fd_c < 0){
+        perror("accept");
+        exit(1);
+      }
+      intptr_t id_c = -1;
+      int i = 0;
+      for(; i < MAX_CLIENTS; i++){
+        if(clients[i] == -1){
+          clients[i] = fd_c;
+          char ip_c[INET_ADDRSTRLEN];
+          if(inet_ntop(AF_INET, &ad, ip_c, a_len)) printf("Client %d joined on %s\n", i, ip_c);
+          id_c = i;
+          break;
+        }
+      }
+      clientsCount += 1;
+      adinfo = pthread_create(&thread_t[id_c], NULL, process_client, (void*)id_c);
+      if(adinfo){
+        perror("pthread_create\n");
+        exit(1);
+      }
+    }
+    freeaddrinfo(res);
 }
 
 /**

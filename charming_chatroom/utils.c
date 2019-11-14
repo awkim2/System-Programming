@@ -1,11 +1,14 @@
 /**
  * Charming Chatroom
  * CS 241 - Fall 2019
+ * partner mengz5 
  */
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include "utils.h"
 static const size_t MESSAGE_SIZE_DIGITS = 4;
@@ -32,15 +35,40 @@ ssize_t get_message_size(int socket) {
 // You may assume size won't be larger than a 4 byte integer
 ssize_t write_message_size(size_t size, int socket) {
     // Your code here
-    return 9001;
+    size = htonl(size);
+    return write_all_to_socket(socket, (char*)&size, MESSAGE_SIZE_DIGITS);
 }
 
 ssize_t read_all_from_socket(int socket, char *buffer, size_t count) {
     // Your Code Here
-    return 9001;
+    ssize_t wcount = count;
+    ssize_t total = 0;
+    ssize_t r = 0;
+    while(wcount > 0){
+      r = read(socket, buffer + total, wcount);
+      if(r > 0){
+        total += r;
+        wcount -= r;
+      }
+      if(!r) return 0;
+      if(r == -1 && errno != EINTR) break;
+    }
+    return count;
 }
 
 ssize_t write_all_to_socket(int socket, const char *buffer, size_t count) {
     // Your Code Here
-    return 9001;
+    ssize_t wcount = count;
+    ssize_t r = 0;
+    ssize_t total = 0;
+    while(wcount > 0){
+      r = write(socket, buffer + total, wcount);
+      if(r > 0){
+        total += r;
+        wcount -= r;
+      }
+      if(!r) return 0;
+      if(r == -1 && errno != EINTR) break;
+    }
+    return count;
 }

@@ -30,8 +30,9 @@ void close_program(int signal);
  */
 void close_server_connection() {
     // Your code here
+    if(shutdown(serverSocket, SHUT_RDWR) != 0) perror("shutdown");
+    if(close(serverSocket) != 0) perror("close");
 }
-
 /**
  * Sets up a connection to a chatroom server and returns
  * the file descriptor associated with the connection.
@@ -41,18 +42,29 @@ void close_server_connection() {
  *
  * Returns integer of valid file descriptor, or exit(1) on failure.
  */
+
 int connect_to_server(const char *host, const char *port) {
-    /*QUESTION 1*/
-    /*QUESTION 2*/
-    /*QUESTION 3*/
-
-    /*QUESTION 4*/
-    /*QUESTION 5*/
-
-    /*QUESTION 6*/
-
-    /*QUESTION 7*/
-    return -1;
+    int out = socket(AF_INET, SOCK_STREAM, 0);
+    if(out == -1){
+      perror("socket");
+      exit(1);
+    }
+    struct addrinfo adinfo;
+    memset(&adinfo, 0, sizeof(struct addrinfo));
+    adinfo.ai_family = AF_INET;
+    adinfo.ai_socktype = SOCK_STREAM;
+    struct addrinfo *read;
+    int add = getaddrinfo(host, port, &adinfo, &read);
+    if (add) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(add));
+        exit(1);
+    }
+    if(connect(out, read->ai_addr, read->ai_addrlen) == -1){
+        perror("connection error");
+        exit(1);
+    }
+    freeaddrinfo(read);
+    return out;
 }
 
 typedef struct _thread_cancel_args {
