@@ -32,18 +32,19 @@ void read_response_from_server(char **args, int socket, verb method) {
         // DELETE or PUT responses OK
         if (method == DELETE || method == PUT) {
             print_success();
+        }
         // GET responses OK
-        }else if (method == GET) {
+        if (method == GET) {
             FILE *local_file = fopen(args[4], "a+");
             if (!local_file) {
-                perror(NULL);
+                perror("fopen");
                 exit(-1);
             }
             size_t size;
             read_from_socket(socket, (char *)&size, sizeof(size_t));
             size_t rtotal = 0;
+            size_t r_size;
             while (rtotal < size + 5) {
-                size_t r_size;
                 if ((size + 5 - rtotal) > 1024){
                     r_size = 1024;
                 }else{
@@ -67,8 +68,9 @@ void read_response_from_server(char **args, int socket, verb method) {
                 exit(-1);
             }
             fclose(local_file);
+        }
         // LIST responses OK
-        }else if (method == LIST) {
+        if (method == LIST) {
             size_t size;
             read_from_socket(socket, (char*)&size, sizeof(size_t));
             char buffer[size + 6];
@@ -156,15 +158,15 @@ int main(int argc, char **argv) {
         struct stat statbuf;
         int status = stat(args[4], &statbuf);
         if(status == -1) exit(-1);
+        //write size
         size_t size = statbuf.st_size;
         write_to_socket(sock_fd, (char*)&size, sizeof(size_t));
-
+        //write data
         FILE* local_file = fopen(args[4], "r");
         if(!local_file) exit(-1);
-
+        ssize_t w_size;
         size_t wtotal = 0;
         while (wtotal < size) {
-            ssize_t w_size;
             if((size - wtotal) > 1024 ){
                 w_size = 1024;
             }else{
@@ -182,8 +184,8 @@ int main(int argc, char **argv) {
     } 
 
     //shutdown the WRITE end of socket
-    if (shutdown(sock_fd, SHUT_WR) != 0) perror("shutdown");
-
+    int status2 = shutdown(sock_fd, SHUT_WR);
+    if(status2 != 0) perror("shutdown");
     //get response from server
     read_response_from_server(args, sock_fd, method);
     //shut down READ end of socket
