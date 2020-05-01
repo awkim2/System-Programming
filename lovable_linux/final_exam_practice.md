@@ -11,11 +11,11 @@ Be awesome. Angrave.
 
 
 1.	What are the differences between a library call and a system call? Include an example of each.
-
+    libary call require less resource, but system call require more resource. Many library calls require calling system call for example printf() is library call and write() is system call.
 
 2.	What is the `*` operator in C? What is the `&` operator? Give an example of each.
-
-
+    * is dereference operator  char* a = "abc"
+     & is address of operator  &a is the starting address of string "abc"
 3.	When is `strlen(s)` != `1+strlen(s+1)` ?
 
 
@@ -45,9 +45,11 @@ else
 1.	Explain how a virtual address is converted into a physical address using a multi-level page table. You may use a concrete example e.g. a 64bit machine with 4KB pages. 
 
 2.	Explain Knuth's and the Buddy allocation scheme. Discuss internal & external Fragmentation.
-
+    Knuth’s memory allocation scheme makes use of boundary tags. Boundary tags hold the size of the user allocated memory of the block. This allows blocks to be merged forwards and backwards.
+    The buddy allocation scheme uses differently sized blocks to hold user allocated memory. It has the advantage of being fast but suffers from internal fragmentation.
 3.	What is the difference between the MMU and TLB? What is the purpose of each?
-
+    The MMU is a Memory Management Unit, a part of the CPU dedicated to converting addresses from virtual to physical.
+    The TLB is the Translation Lookaside Buffer, an associative cache which holds recent page to frame lookups, using TLB can improve the memory access speed a lot.
 4.	Assuming 4KB page tables what is the page number and offset for virtual address 0x12345678  ?
 
 5.	What is a page fault? When is it an error? When is it not an error?
@@ -57,7 +59,7 @@ else
 ## 3. Processes and Threads 
 
 1.	What resources are shared between threads in the same process?
-
+    Threads in the same process share all segments except stack space, and every thread has its own stack segment.
 2.	Explain the operating system actions required to perform a process context switch
 
 3.	Explain the actions required to perform a thread context switch to a thread in the same process
@@ -65,14 +67,17 @@ else
 4.	How can a process be orphaned? What does the process do about it?
 
 5.	How do you create a process zombie?
-
+    A child that terminates, but has not been waited for becomes a "zombie".
 6.	Under what conditions will a multi-threaded process exit? (List at least 4)
-
+    any thread call exit()
+    main thread call exit() or return()
+    signal (SIGSEGV, SIGSTOP, SIGKILL)
+    All threads call pthread-exit()
 ## 4. Scheduling 
 1.	Define arrival time, pre-emption, turnaround time, waiting time and response time in the context of scheduling algorithms. What is starvation?  Which scheduling policies have the possibility of resulting in starvation?
 
 2.	Which scheduling algorithm results the smallest average wait time?
-
+    Round robin has the shortest average response time 
 3.	What scheduling algorithm has the longest average response time? shortest total wait time?
 
 4.	Describe Round-Robin scheduling and its performance advantages and disadvantages.
@@ -84,13 +89,17 @@ else
 7.	How does the length of the time quantum affect Round-Robin scheduling? What is the problem if the quantum is too small? In the limit of large time slices Round Robin is identical to _____?
 
 8.	What reasons might cause a scheduler switch a process from the running to the ready state?
+     A scheduler switch a process from the running to the ready state when its quantum expires, when it waits for I/O resources and when it is preempted
 
 ## 5. Synchronization and Deadlock
 
 1.	Define circular wait, mutual exclusion, hold and wait, and no-preemption. How are these related to deadlock?
-
+    Circular Wait - a cycle where every process is waiting on a resource some other process has while holding resources required by at least one other process.
+    Mutual Exclusion - resources can not be shared
+    Hold and Wait - process that has incomplete set of resources will keep holding onto resources while waiting for remaining requisite resources
+    No Preemption - once a resource is acquired, a process will not release the resource nor could it be taken forcibly 
 2.	What problem does the Banker's Algorithm solve?
-
+    Dining philosophers problem
 3.	What is the difference between Deadlock Prevention, Deadlock Detection and Deadlock Avoidance?
 
 4.	Sketch how to use condition-variable based barrier to ensure your main game loop does not start until the audio and graphic threads have initialized the hardware and are ready.
@@ -110,13 +119,13 @@ else
 3.	Give an example of kernel generated signal. List 2 calls that can a process can use to generate a SIGUSR1.
 
 4.	What signals can be caught or ignored?
-
+    Most of singals except SIGKILL and SIGSTOP
 5.	What signals cannot be caught? What is signal disposition?
-
+    SIGKILL and SIGSTOP. The signal disposition is a per-process attribute, and signal disposition is how a process plans on responding to a signal .
 6.	Write code that uses sigaction and a signal set to create a SIGALRM handler.
 
 7.	Why is it unsafe to call printf, and malloc inside a signal handler?
-
+    Printf() or malloc() is not a async-signal-safe function, calling these function inside signal handler is "undefined behavior" also can cause deadlock.
 ## 7. Networking 
 
 1.	Explain the purpose of `socket`, `bind`, `listen`, and `accept` functions
@@ -128,19 +137,30 @@ else
 4.	Explain the main differences between using `select` and `epoll`. What are edge- and level-triggered epoll modes?
 
 5.	Describe the services provided by TCP but not UDP. 
-
+    Packet ordering, no duplication,  Error correction, flow control, Congestion control
 6.	How does TCP connection establishment work? And how does it affect latency in HTTP1.0 vs HTTP1.1?
 
 7.	Wrap a version of read in a loop to read up to 16KB into a buffer from a pipe or socket. Handle restarts (`EINTR`), and socket-closed events (return 0).
 
 8.	How is Domain Name System (DNS) related to IP and UDP? When does host resolution not cause traffic?
-
+    Domain Name Service translates hostnames to IP addresses by you sending a UDP packet to your DNS server, and If that DNS server has the packet cached return the result, if not, ask higher-level DNS servers for the answer and Cache and send the result.
+    Host resolution not cause traffic when the addresses are locally stored.
 9.	What is NAT and where and why is it used? 
 
 ## 8. Files 
 
 1.	Write code that uses `fseek`, `ftell`, `read` and `write` to copy the second half of the contents of a file to a `pipe`.
-
+    FILE* f = fopen(fname,"r+");
+    fseek(f, 0, SEEK_END);
+    long end = ftell(f); 
+    long mid = end/2;
+    fseek(f, mid, SEEK_SET);
+    char* buffer = malloc(end - mid);
+    int fd = fileno(f);
+    read(fd, buffer, end - mid);
+    write (pipe_des[1], buffer, end - mid); 
+    free (buffer);
+    fclose (f);
 2.	Write code that uses `open`, `fstat`, `mmap` to print in reverse the contents of a file to `stderr`.
 
 3.	Write brief code to create a symbolic link and hard link to the file /etc/password
@@ -150,7 +170,10 @@ else
 5.	Briefly explain permission bits (including sticky and setuid bits) for files and directories.
 
 6.	Write brief code to create a function that returns true (1) only if a path is a directory.
-
+    struct stat path_stat;
+    memset(path_stat,0, sizeof(struct stat));
+    stat(path, &path_stat);
+    return S_ISDIR(path_stat.st_mode)
 7.	Write brief code to recursive search user's home directory and sub-directories (use `getenv`) for a file named "xkcd-functional.png' If the file is found, print the full path to stdout.
 
 8.	The file 'installmeplz' can't be run (it's owned by root and is not executable). Explain how to use sudo, chown and chmod shell commands, to change the ownership to you and ensure that it is executable.
@@ -161,9 +184,9 @@ Assume 10 direct blocks, a pointer to an indirect block, double-indirect, and tr
 1.	A file uses 10 direct blocks, a completely full indirect block and one double-indirect block. The latter has just one entry to a half-full indirect block. How many disk blocks does the file use, including its content, and all indirect, double-indirect blocks, but not the inode itself? A sketch would be useful.
 
 2.	How many i-node reads are required to fetch the file access time at /var/log/dmesg ? Assume the inode of (/) is cached in memory. Would your answer change if the file was created as a symbolic link? Hard link?
-
+    3 reads for a hard link, 4 reads for a symbolic link.
 3.	What information is stored in an i-node?  What file system information is not? 
-
+    inode stores inode number, access permissions, file size, last modification time, last change time, last access time, but does not store file name, file path, file type
 4.	Using a version of stat, write code to determine a file's size and return -1 if the file does not exist, return -2 if the file is a directory or -3 if it is a symbolic link.
 
 5.	If an i-node based file uses 10 direct and n single-indirect blocks (1 <= n <= 1024), what is the smallest and largest that the file contents can be in bytes? You can leave your answer as an expression.
@@ -173,3 +196,10 @@ Assume 10 direct blocks, a pointer to an indirect block, double-indirect, and tr
 ## 10. "I know the answer to one exam question because I helped write it"
 
 Create a hard but fair 'spot the lie/mistake' multiple choice or short-answer question. Ideally, 50% can get it correct.
+
+    1. What is the purpose and difference between shutdown() and close()?
+    2. Which layer does TCP/UDP locate in the OSI model?
+        A. Network Layer
+        B. Link Layer
+        C. Transport Layer
+        D. Application Layer
